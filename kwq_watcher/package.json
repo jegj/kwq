@@ -1,0 +1,16 @@
+{
+  "name": "kwq_gscript",
+  "version": "0.1.0",
+  "description": "A gscript watchwe for kwq ",
+  "keywords": [
+    "gscript",
+    "kwq"
+  ],
+  "license": "MIT",
+  "author": "jegj57@gmail.com",
+  "type": "commonjs",
+  "main": "main.gs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
