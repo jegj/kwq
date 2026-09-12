@@ -18,6 +18,7 @@ function checkMail() {
   try {
     const seen = loadSeen();
     const messages = findNewMessages(seen);
+    console.log(`Found ${messages.length} new message(s).`);
     messages.forEach(m => {
       if (postToWebhook(m)) seen.add(m.getId());
     });
