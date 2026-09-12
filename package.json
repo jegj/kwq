@@ -1,0 +1,10 @@
+{
+  "name": "kwq",
+  "version": "0.1.0",
+  "description": "Peruvian bank spending analyzer: watches email for bank notifications and records them for analysis",
+  "license": "MIT",
+  "author": "jegj57@gmail.com",
+  "scripts": {
+    "push:gscript": "npm run push --prefix kwq_watcher"
+  }
+}
