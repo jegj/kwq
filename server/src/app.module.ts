@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { createObserveModule } from '@nestjs/observe';
+import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
+
+const isDev = process.env.APP_ENV !== 'production';
 
 @Module({
   imports: [
@@ -14,6 +17,12 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appKey: process.env.OBSERVE_APP_KEY ?? '',
       appSecret: process.env.OBSERVE_APP_SECRET ?? '',
       serviceId: 'nest-typescript-starter',
+    }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? (isDev ? 'debug' : 'info'),
+        transport: isDev ? { target: 'pino-pretty', options: { singleLine: true } } : undefined,
+      },
     }),
     PrismaModule,
   ],
