@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { join } from 'node:path';
 import fastifyView from '@fastify/view';
 import { NestFactory } from '@nestjs/core';
