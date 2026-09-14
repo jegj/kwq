@@ -4,7 +4,13 @@
   "description": "Peruvian bank spending analyzer: watches email for bank notifications and records them for analysis",
   "license": "MIT",
   "author": "jegj57@gmail.com",
+  "workspaces": [
+    "server",
+    "kwq_watcher"
+  ],
   "scripts": {
-    "push:gscript": "npm run push --prefix kwq_watcher"
+    "push:gscript": "npm run push --prefix kwq_watcher",
+    "db:up": "docker-compose -f server/docker-compose.yml up -d",
+    "dev": "npm run start:dev --workspace=server"
   }
 }
