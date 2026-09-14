@@ -7,6 +7,7 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import ejs from 'ejs';
+import { Logger } from 'nestjs-pino';
 import { AppModule, ObserveInstrument } from './app.module.js';
 
 async function bootstrap() {
@@ -15,8 +16,10 @@ async function bootstrap() {
     new FastifyAdapter(),
     {
       instrument: ObserveInstrument,
+      bufferLogs: true,
     },
   );
+  app.useLogger(app.get(Logger));
 
   await app.register(fastifyView, {
     engine: { ejs },
