@@ -7,16 +7,77 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  email        String   @unique
+  id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email        String        @unique
   passwordHash String
-  role         Role     @default(USER)
-  webhookToken String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         Role          @default(USER)
+  webhookToken String        @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  categories   Category[]
+  emails       Email[]
+  transactions Transaction[]
 }
 
 enum Role {
   USER
   ADMIN
+}
+
+model Category {
+  id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId       String?       @db.Uuid
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  icon         String?
+  color        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+
+  @@unique([userId, name])
+}
+
+model Email {
+  id            String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId        String       @db.Uuid
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAddress   String
+  subject       String?
+  body          String
+  bodyHtml      String?
+  receivedAt    DateTime
+  parseStatus   ParseStatus  @default(UNPARSED)
+  parserName    String?
+  transactionId String?      @unique @db.Uuid
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([userId, parseStatus])
+}
+
+enum ParseStatus {
+  UNPARSED
+  PARSED
+  FAILED
+}
+
+model Transaction {
+  id                    String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId                String    @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId            String?   @db.Uuid
+  category              Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  amount                Decimal   @db.Decimal(12, 2)
+  currency              String    @db.Char(3)
+  merchant              String
+  description           String?
+  transactionDate       DateTime
+  isManuallyCategorized Boolean   @default(false)
+  email                 Email?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId, transactionDate])
 }
