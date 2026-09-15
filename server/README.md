@@ -60,3 +60,27 @@ npm run test:cov
 npm run lint
 npm run format
 ```
+
+## Prisma
+
+```bash
+# create a migration file without applying it
+npx prisma migrate dev --name <name> --create-only
+
+# apply pending migrations (dev) — also available as `npm run db:migrate`
+# (or `npm run db:migrate` from the repo root)
+npx prisma migrate dev
+
+# apply pending migrations (prod/CI, no prompts, no diffing)
+npx prisma migrate deploy
+
+# check current migration status
+npx prisma migrate status
+
+# regenerate the Prisma client after schema changes
+npx prisma generate
+
+# reset: drops the dev DB and re-applies all migrations — also available
+# as `npm run db:reset` (dev only, never run against prod/staging)
+npx prisma migrate reset
+```
