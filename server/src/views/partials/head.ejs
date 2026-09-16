@@ -18,6 +18,147 @@
         --pico-primary-hover-underline: var(--pico-primary-hover);
         --pico-primary-inverse: #fff;
       }
+
+      .app-shell {
+        display: flex;
+        align-items: flex-start;
+        gap: 2rem;
+      }
+
+      .app-sidebar {
+        flex: 0 0 14rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .app-sidebar a {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        border-left: 2px solid transparent;
+        color: var(--pico-color);
+        text-decoration: none;
+      }
+
+      .app-sidebar a:hover {
+        color: var(--pico-primary);
+      }
+
+      .app-sidebar a[aria-current='page'] {
+        border-left-color: var(--pico-primary);
+        color: var(--pico-primary);
+        font-weight: 600;
+      }
+
+      .app-sidebar .soon {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        color: var(--pico-muted-color);
+      }
+
+      .app-sidebar .soon small {
+        color: var(--pico-muted-color);
+      }
+
+      .app-content {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .profile-menu {
+        position: relative;
+      }
+
+      .profile-face {
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: var(--pico-primary-background);
+        color: var(--pico-primary-inverse);
+        font-weight: 600;
+      }
+
+      .profile-dropdown {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        min-width: 12rem;
+        background: var(--pico-background-color);
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+      }
+
+      .profile-dropdown form {
+        margin: 0;
+      }
+
+      .profile-dropdown .profile-email {
+        font-size: 0.875rem;
+        color: var(--pico-muted-color);
+        word-break: break-all;
+      }
+
+      [x-cloak] {
+        display: none !important;
+      }
+
+      .sidebar-toggle {
+        display: none;
+      }
+
+      .sidebar-backdrop {
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar-toggle {
+          display: inline-flex;
+        }
+
+        .app-shell {
+          gap: 0;
+        }
+
+        .app-sidebar {
+          position: fixed;
+          inset: 0 auto 0 0;
+          z-index: 20;
+          width: 14rem;
+          padding: 1.5rem 1rem;
+          background: var(--pico-background-color);
+          border-right: 1px solid var(--pico-muted-border-color);
+          transform: translateX(-100%);
+          transition: transform 0.2s ease;
+        }
+
+        .app-shell.sidebar-open .app-sidebar {
+          transform: translateX(0);
+        }
+
+        .app-shell.sidebar-open .sidebar-backdrop {
+          display: block;
+          position: fixed;
+          inset: 0;
+          z-index: 10;
+          background: rgba(0, 0, 0, 0.5);
+        }
+      }
     </style>
     <script
       defer

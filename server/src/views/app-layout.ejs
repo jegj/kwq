@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <%- include('./partials/head') %>
+  </head>
+  <body x-data="{ sidebarOpen: false }" x-bind:class="sidebarOpen ? 'sidebar-open' : ''">
+    <header class="container app-header">
+      <span
+        style="
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: var(--pico-primary);
+        "
+      >
+        <button
+          type="button"
+          class="sidebar-toggle outline"
+          aria-label="Toggle navigation"
+          x-on:click="sidebarOpen = !sidebarOpen"
+          style="padding: 0.25rem 0.6rem;"
+        >
+          ☰
+        </button>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 2.5 L20 5.5 V11.5 C20 17 16.5 20.5 12 21.5 C7.5 20.5 4 17 4 11.5 V5.5 Z"
+          />
+          <path
+            d="M8.3 11.5 C9.4 9.7 14.6 9.7 15.7 11.5 C14.6 13.3 9.4 13.3 8.3 11.5 Z"
+          />
+          <circle cx="12" cy="11.5" r="1.3" fill="currentColor" stroke="none" />
+        </svg>
+        <strong>kwq</strong>
+      </span>
+
+      <div class="profile-menu" x-data="{ open: false }" x-on:click.outside="open = false">
+        <button
+          type="button"
+          class="profile-face"
+          aria-label="Account menu"
+          x-on:click="open = !open"
+        ><%= email.charAt(0).toUpperCase() %></button>
+        <div class="profile-dropdown" x-show="open" x-cloak>
+          <span class="profile-email"><%= email %></span>
+          <form method="post" action="/auth/logout">
+            <button type="submit" class="outline secondary">Log out</button>
+          </form>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <div
+        class="sidebar-backdrop"
+        x-on:click="sidebarOpen = false"
+        aria-hidden="true"
+      ></div>
+      <div class="app-shell">
+        <nav class="app-sidebar" aria-label="App navigation">
+          <a href="/app/dashboard" aria-current="page">Dashboard</a>
+          <span class="soon">Transactions <small>Soon</small></span>
+          <span class="soon">Categories <small>Soon</small></span>
+          <span class="soon">Emails <small>Soon</small></span>
+        </nav>
+        <div class="app-content">
+          <%- include(page) %>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
