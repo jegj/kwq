@@ -28,7 +28,9 @@ const observeImports = isDev
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.LOG_LEVEL ?? (isDev ? 'debug' : 'info'),
-        transport: isDev ? { target: 'pino-pretty', options: { singleLine: true } } : undefined,
+        transport: isDev
+          ? { target: 'pino-pretty', options: { singleLine: true } }
+          : undefined,
       },
     }),
     PrismaModule,
