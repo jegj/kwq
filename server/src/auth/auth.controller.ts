@@ -3,8 +3,8 @@ import { Controller, Get, Render } from '@nestjs/common';
 @Controller('auth')
 export class AuthController {
   @Get('login')
-  @Render('login')
+  @Render('layout')
   getLogin() {
-    return {};
+    return { title: 'Log in', page: './pages/login' };
   }
 }
