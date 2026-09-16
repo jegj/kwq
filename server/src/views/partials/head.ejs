@@ -5,6 +5,20 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.1.1/css/pico.slate.min.css"
     />
+    <style>
+      :root[data-theme="dark"] {
+        --pico-primary: #e08a83;
+        --pico-primary-background: #b3413c;
+        --pico-primary-border: var(--pico-primary-background);
+        --pico-primary-hover: #eda9a3;
+        --pico-primary-hover-background: #c2534e;
+        --pico-primary-hover-border: var(--pico-primary-hover-background);
+        --pico-primary-focus: rgba(224, 138, 131, 0.5);
+        --pico-primary-underline: rgba(224, 138, 131, 0.5);
+        --pico-primary-hover-underline: var(--pico-primary-hover);
+        --pico-primary-inverse: #fff;
+      }
+    </style>
     <script
       defer
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.3/dist/cdn.min.js"

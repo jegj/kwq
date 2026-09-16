@@ -1,21 +1,45 @@
-<article style="max-width: 24rem; margin-inline: auto;">
-  <h1>Log in</h1>
-  <form method="post" action="/auth/login" x-data="{ showPassword: false }">
-    <label for="email">Email address</label>
-    <input type="email" id="email" name="email" required autocomplete="email" />
+<div
+  style="
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100dvh - 10rem);
+  "
+>
+  <article style="max-width: 24rem; width: 100%;">
+    <h1>Log in</h1>
+    <form method="post" action="/auth/login" x-data="{ showPassword: false }">
+      <label for="email">Email address</label>
+      <input type="email" id="email" name="email" required autocomplete="email" />
 
-    <label for="password">Password</label>
-    <div role="group">
-      <input
-        :type="showPassword ? 'text' : 'password'"
-        id="password"
-        name="password"
-        required
-        autocomplete="current-password"
-      />
-      <button type="button" x-on:click="showPassword = !showPassword" x-text="showPassword ? 'Hide' : 'Show'"></button>
-    </div>
+      <label for="password">Password</label>
+      <div role="group">
+        <input
+          :type="showPassword ? 'text' : 'password'"
+          id="password"
+          name="password"
+          required
+          autocomplete="current-password"
+        />
+        <button
+          type="button"
+          class="outline secondary"
+          x-on:click="showPassword = !showPassword"
+          x-text="showPassword ? 'Hide' : 'Show'"
+        ></button>
+      </div>
 
-    <button type="submit">Log in</button>
-  </form>
-</article>
+      <button type="submit">Log in</button>
+    </form>
+    <p
+      style="
+        margin-top: 1.5rem;
+        margin-bottom: 0;
+        font-size: 0.875rem;
+        color: var(--pico-muted-color);
+      "
+    >
+      New accounts and password resets go through your admin.
+    </p>
+  </article>
+</div>
