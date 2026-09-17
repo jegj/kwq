@@ -1,8 +1,6 @@
-# Webhook server — design analysis
+# KWQ
 
-Captures the decisions from the design interview for the `server/` webhook
-service that receives forwarded emails from `kwq_watcher`, parses them,
-classifies expenses, and displays them.
+kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now) email for bank notifications via a Google Apps Script, forwards matching messages to a backend, and records them for analysis.
 
 ## Scope & users
 

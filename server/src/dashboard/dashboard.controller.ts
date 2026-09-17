@@ -1,16 +1,17 @@
-import { Controller, Get, Render } from '@nestjs/common';
+import { Controller, Get, Render, Req, UseGuards } from '@nestjs/common';
+import type { FastifyRequest } from 'fastify';
+import { SessionGuard } from '../auth/guard/session.guard.js';
 
 @Controller('app')
 export class DashboardController {
   @Get('dashboard')
+  @UseGuards(SessionGuard)
   @Render('app-layout')
-  getDashboard() {
+  getDashboard(@Req() request: FastifyRequest) {
     return {
       title: 'Dashboard',
       page: './pages/dashboard',
-      // ponytail: no session yet, so no real logged-in user to read the
-      // email from — swap this for the session user once login lands.
-      email: 'you@example.com',
+      email: request.user?.email,
     };
   }
 }
