@@ -1,4 +1,3 @@
-
 # Webhook server — design analysis
 
 Captures the decisions from the design interview for the `server/` webhook
@@ -111,6 +110,7 @@ classifies expenses, and displays them.
   ```
   views/
     layout.ejs          (shell: CDN tags, header/footer, <%- include(page) %>)
+    app-layout.ejs      (shell for /app/* pages, includes layout.ejs)
     partials/
       head.ejs           (<head> contents, included by layout.ejs)
     pages/
