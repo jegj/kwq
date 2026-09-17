@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { createObserveModule } from '@nestjs/observe';
 import { LoggerModule } from 'nestjs-pino';
+import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -22,6 +23,7 @@ const observeImports = isDev
     ];
 
 @Module({
+  controllers: [AppController],
   imports: [
     // Distributed tracing, auto-correlated logs, request/job metrics, error
     // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com

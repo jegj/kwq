@@ -58,6 +58,10 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
     `POSTGRES_USER=kwq`, `POSTGRES_PASSWORD=kwq`, `POSTGRES_DB=kwq_dev`.
 - **npm workspaces**: root `package.json` has
   `"workspaces": ["server", "kwq_watcher"]`.
+  - Dependency versions are pinned exact (no `^`/`~`) in `server/package.json`.
+    Enforced via `save-exact=true` in the root `.npmrc` — npm ignores
+    per-workspace `.npmrc` files, so it has to live at the repo root, not
+    `server/.npmrc`.
 - **Prisma**: `prisma` + `@prisma/client` + `@prisma/adapter-pg` (7.10.0).
   - Prisma 7 moved connection config out of `schema.prisma` — the
     `datasource` block only has `provider`, the URL lives in
@@ -85,6 +89,33 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   separate `APP_ENV` (`development` / `staging` / `production`) drives all
   app-specific lower-environment logic (currently just the pino-pretty
   switch above). Both live in `server/.env` / `.env.example`.
+
+## Auth implementation
+
+- Session cookie named `session`, httpOnly, `SameSite=Lax`, holding a JWT
+  signed with `JWT_SECRET`. Payload is `{ id, role, email }`, 7-day expiry.
+  Signing/verifying lives in `server/src/auth/util/jwt.util.ts`.
+- `SessionGuard` (protects `/app/*`) and `GuestGuard` (protects `/auth/login`
+  from already-logged-in visitors) don't return `false` — they throw
+  `RedirectException` (`server/src/auth/redirect/redirect.exception.ts`),
+  caught by a global `RedirectExceptionFilter` that does the actual
+  `reply.redirect()`. Returning `false` from a guard fights Nest's default
+  403 response instead of cleanly redirecting.
+- Request validation via DTOs (`server/src/auth/dto/`) with `class-validator`
+  decorators + a global `ValidationPipe({ whitelist: true })` — controllers
+  stay thin, no manual field checks.
+- `server/src/auth/` layout: `dto/`, `guard/`, `redirect/`, `types/`,
+  `util/` — new auth code should land in the matching subfolder.
+- Gotchas:
+  - Nest's Fastify adapter already registers urlencoded body parsing by
+    default — don't add `@fastify/formbody`, it collides
+    ("Content type parser already present").
+  - `@fastify/cookie`'s own type augmentation (adds `cookies`/`setCookie`/
+    `clearCookie` to Fastify's types) doesn't merge in this npm-workspace
+    setup — hoisting means it resolves a different copy of `fastify`'s types
+    than our code imports. Worked around with a local declaration merge in
+    `server/src/auth/types/fastify-request.d.ts` instead of relying on the
+    package's own types.
 
 ## UI
 
