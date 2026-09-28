@@ -9,14 +9,16 @@ datasource db {
 model User {
   id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   email        String        @unique
-  passwordHash String
+  passwordHash String        @map("password_hash")
   role         Role          @default(USER)
-  webhookToken String        @unique
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  webhookToken String        @unique @map("webhook_token")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
   categories   Category[]
-  emails       Email[]
+  emails       EmailNotification[]
   transactions Transaction[]
+
+  @@map("user")
 }
 
 enum Role {
@@ -26,35 +28,37 @@ enum Role {
 
 model Category {
   id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  userId       String?       @db.Uuid
+  userId       String?       @db.Uuid @map("user_id")
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   name         String
   icon         String?
   color        String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
   transactions Transaction[]
 
   @@unique([userId, name])
+  @@map("category")
 }
 
-model Email {
+model EmailNotification {
   id            String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  userId        String       @db.Uuid
+  userId        String       @db.Uuid @map("user_id")
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fromAddress   String
+  fromAddress   String       @map("from_address")
   subject       String?
   body          String
-  bodyHtml      String?
-  receivedAt    DateTime
-  parseStatus   ParseStatus  @default(UNPARSED)
-  parserName    String?
-  transactionId String?      @unique @db.Uuid
+  bodyHtml      String?      @map("body_html")
+  receivedAt    DateTime     @map("received_at")
+  parseStatus   ParseStatus  @default(UNPARSED) @map("parse_status")
+  parserName    String?      @map("parser_name")
+  transactionId String?      @unique @db.Uuid @map("transaction_id")
   transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
 
   @@index([userId, parseStatus])
+  @@map("email_notification")
 }
 
 enum ParseStatus {
@@ -65,19 +69,20 @@ enum ParseStatus {
 
 model Transaction {
   id                    String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  userId                String    @db.Uuid
+  userId                String    @db.Uuid @map("user_id")
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categoryId            String?   @db.Uuid
+  categoryId            String?   @db.Uuid @map("category_id")
   category              Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   amount                Decimal   @db.Decimal(12, 2)
   currency              String    @db.Char(3)
   merchant              String
   description           String?
-  transactionDate       DateTime
-  isManuallyCategorized Boolean   @default(false)
-  email                 Email?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  transactionDate       DateTime  @map("transaction_date")
+  isManuallyCategorized Boolean   @default(false) @map("is_manually_categorized")
+  email                 EmailNotification?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
   @@index([userId, transactionDate])
+  @@map("transaction")
 }
