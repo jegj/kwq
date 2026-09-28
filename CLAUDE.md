@@ -75,6 +75,8 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   - Convention: only repository classes inject `PrismaService` directly —
     everything else depends on the repository's interface, not Prisma.
   - Data model: see `server/prisma/schema.prisma`.
+  - Naming: Prisma models/fields stay camelCase; the underlying DB tables and
+    columns are snake_case via `@@map`/`@map`.
 - **Logging**: `nestjs-pino` (`nestjs-pino` + `pino` + `pino-http`), with
   `pino-pretty` as a dev dependency only.
   - `LoggerModule.forRoot()` in `AppModule`: `pino-pretty` transport (colored,
