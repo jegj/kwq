@@ -17,6 +17,7 @@ model User {
   categories   Category[]
   emails       EmailNotification[]
   transactions Transaction[]
+  activities   UserActivity[]
 
   @@map("user")
 }
@@ -85,4 +86,15 @@ model Transaction {
 
   @@index([userId, transactionDate])
   @@map("transaction")
+}
+
+model UserActivity {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId    String   @db.Uuid @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("user_activity")
 }

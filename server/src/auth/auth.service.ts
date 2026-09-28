@@ -17,4 +17,16 @@ export class AuthService {
     }
     return { id: user.id, role: user.role, email: user.email };
   }
+
+  async recordLogin(userId: string): Promise<void> {
+    await this.prisma.userActivity.create({
+      data: { userId, action: 'LOGIN' },
+    });
+  }
+
+  async recordLogout(userId: string): Promise<void> {
+    await this.prisma.userActivity.create({
+      data: { userId, action: 'LOGOUT' },
+    });
+  }
 }

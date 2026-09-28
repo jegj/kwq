@@ -5,15 +5,16 @@ import {
   HttpStatus,
   Post,
   Render,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import type { FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { GuestGuard } from './guard/guest.guard.js';
-import { signAuthToken } from './util/jwt.util.js';
+import { signAuthToken, verifyAuthToken } from './util/jwt.util.js';
 
 const SESSION_COOKIE = 'session';
 
@@ -37,6 +38,7 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
+    await this.authService.recordLogin(user.id);
 
     const token = signAuthToken(user);
     reply.setCookie(SESSION_COOKIE, token, {
@@ -48,7 +50,16 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Res({ passthrough: true }) reply: FastifyReply) {
+  async logout(
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const token = request.cookies?.session;
+    const payload = token ? verifyAuthToken(token) : null;
+    if (payload) {
+      await this.authService.recordLogout(payload.id);
+    }
+
     reply.clearCookie(SESSION_COOKIE, { path: '/' });
     reply.status(HttpStatus.FOUND).redirect('/auth/login');
   }
