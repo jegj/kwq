@@ -28,6 +28,10 @@ See `../specs/webhook-server.md` for the full design notes and open follow-ups.
 npm install
 ```
 
+Requires [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
+installed locally to expose the webhook to `kwq_watcher` during development
+(`npm run tunnel` from the repo root).
+
 ## Compile and run the project
 
 ```bash
