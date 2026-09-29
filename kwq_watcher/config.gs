@@ -11,7 +11,7 @@ const CONFIG = {
   maxSeenIds: 400,
   bodyCharLimit: 10000,
   pollMinutes: 5,         // 1, 5, 10, 15 or 30
-  dryRun: true,           // flip to false to actually POST
+  dryRun: false,           // flip to false to actually POST
 };
 
 function buildGmailSearchQuery() {
