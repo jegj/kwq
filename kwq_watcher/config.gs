@@ -1,6 +1,6 @@
 const CONFIG = {
-  senders: ['notificaciones@notificacionesbcp.com.pe', 'javiergalarza4@gmail.com'],
-  webhookUrl: 'https://webhook.example.com/hooks/gmail',
+  senders: ['notificaciones@notificacionesbcp.com.pe', 'servicioalcliente@netinterbank.com.pe', 'javiergalarza4@gmail.com'],
+  webhookUrl: 'https://subjective-eggs-minutes-fever.trycloudflare.com/hooks/gmail/faketoken',
   sharedSecret: 'change-me-to-a-long-random-string',
   lookbackWindow: '2d',   // only search recent mail; keeps runs fast
   maxThreads: 25,         // safety cap per run
