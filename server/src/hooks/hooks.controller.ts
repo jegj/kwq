@@ -1,7 +1,15 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Controller, HttpCode, Logger, Post, Body } from '@nestjs/common';
-import { GmailWebhookDto } from './dto/gmail-webhook.dto.js';
+import {
+  Controller,
+  HttpCode,
+  Logger,
+  Post,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import { GmailWebhookDto } from './dto/email-webhook.dto.js';
+import { WebhookTokenGuard } from './guard/webhook-token.guard.js';
 
 // ponytail: dumps every payload to disk for manual inspection while parsers
 // don't exist yet; delete this once real parsing/storage lands.
@@ -13,6 +21,7 @@ export class HooksController {
 
   @Post('email')
   @HttpCode(200)
+  @UseGuards(WebhookTokenGuard)
   receiveGmail(@Body() payload: GmailWebhookDto) {
     this.logger.log(payload);
 

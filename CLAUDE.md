@@ -20,8 +20,8 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
 
 ## Email ingestion & parsing
 
-- Webhook receives per-user tokenized requests (e.g.
-  `/hooks/gmail/:userToken`) from each user's own `kwq_watcher` gscript
+- Webhook receives per-user tokenized requests via an `X-Kwq-Token` header
+  (see Auth implementation below) from each user's own `kwq_watcher` gscript
   instance — no shared global secret, no email-address lookup needed.
 - Raw email content (`body` / `bodyHtml`) is stored permanently, so parsers
   can be re-run against history later if improved.
@@ -108,6 +108,18 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   stay thin, no manual field checks.
 - `server/src/auth/` layout: `dto/`, `guard/`, `redirect/`, `types/`,
   `util/` — new auth code should land in the matching subfolder.
+- Webhook auth (separate from session auth above, lives in `server/src/hooks/`
+  not `server/src/auth/` since it's webhook-specific): each `User` has a
+  `webhookToken` column storing a sha256 hash of an opaque random token
+  (`crypto.randomUUID()`), generated once at account creation (CLI/seed
+  script) alongside the temp password and printed once — not retrievable
+  again. Callers send it as `X-Kwq-Token: <token>`. `WebhookTokenGuard`
+  (`server/src/hooks/guard/webhook-token.guard.ts`) hashes the header and
+  looks up the user, throwing a plain `401 Unauthorized` on a missing/
+  unknown token; no redirect, unlike session auth. Resolved user is attached
+  to `request.webhookUser` (distinct from `request.user`, which is
+  session-auth only; type lives in `server/src/hooks/types/hooks.types.ts`).
+  Applied per-route via `@UseGuards(WebhookTokenGuard)` on `HooksController`.
 - Gotchas:
   - Nest's Fastify adapter already registers urlencoded body parsing by
     default — don't add `@fastify/formbody`, it collides
@@ -162,8 +174,9 @@ per the stack decision above); JSON endpoints exist only for mutations
   - `GET /auth/login` — login form
   - `POST /auth/login` — submit credentials
   - `POST /auth/logout` — clear session
-- **Webhook** (unchanged, per Email ingestion & parsing above)
-  - `POST /hooks/gmail/:userToken` — per-user email ingestion
+- **Webhook** (per Email ingestion & parsing above)
+  - `POST /hooks/email` — per-user email ingestion, authed via `X-Kwq-Token`
+    header (see Auth implementation below)
 - **App** (session-authed)
   - `GET /` — redirects to `/app/dashboard` if authed, `/auth/login` if not
   - `GET /app/dashboard` — charts/summary
@@ -190,7 +203,8 @@ filtering on lists for v1.
 ## Open follow-ups (not yet decided)
 
 - `kwq_watcher` needs to change from a single global `sharedSecret`/
-  `webhookUrl` to a per-user token/URL once accounts exist.
+  `webhookUrl` to sending the per-user `X-Kwq-Token` header (see Auth
+  implementation above) once accounts exist.
 - Invite-link UX details (expiry, password policy) for the CLI/seed script
   path — the web admin creation flow is now decided (see URL design above).
 - Webhook endpoint hardening (rate limiting, payload size limits) — not

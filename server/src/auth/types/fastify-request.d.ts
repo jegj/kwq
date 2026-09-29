@@ -1,3 +1,4 @@
+import type { WebhookAuthenticatedUser } from '../../hooks/types/hooks.types.js';
 import type { AuthTokenPayload } from './auth.types.js';
 
 // ponytail: @fastify/cookie ships this same augmentation, but its own
@@ -7,6 +8,7 @@ import type { AuthTokenPayload } from './auth.types.js';
 declare module 'fastify' {
   interface FastifyRequest {
     user?: AuthTokenPayload;
+    webhookUser?: WebhookAuthenticatedUser;
     cookies: { [cookieName: string]: string | undefined };
   }
 
