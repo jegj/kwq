@@ -1,8 +1,8 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsISO8601,
   IsInt,
+  IsISO8601,
   IsString,
   ValidateNested,
 } from 'class-validator';
