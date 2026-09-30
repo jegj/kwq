@@ -26,7 +26,7 @@ function postToWebhook(message) {
   const response = UrlFetchApp.fetch(CONFIG.webhookUrl, {
     method: 'post',
     contentType: 'application/json',
-    headers: { 'X-Webhook-Secret': CONFIG.sharedSecret },
+    headers: { 'x-kwq-token': CONFIG.sharedSecret },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true,
   });
