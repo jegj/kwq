@@ -47,9 +47,9 @@ model EmailNotification {
   userId        String       @db.Uuid @map("user_id")
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   fromAddress   String       @map("from_address")
-  subject       String?
+  subject       String
   body          String
-  bodyHtml      String?      @map("body_html")
+  bodyHtml      String       @map("body_html")
   receivedAt    DateTime     @map("received_at")
   parseStatus   ParseStatus  @default(UNPARSED) @map("parse_status")
   parserName    String?      @map("parser_name")

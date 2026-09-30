@@ -35,9 +35,9 @@ CREATE TABLE "email_notification" (
     "id" UUID NOT NULL DEFAULT uuidv7(),
     "user_id" UUID NOT NULL,
     "from_address" TEXT NOT NULL,
-    "subject" TEXT,
+    "subject" TEXT NOT NULL,
     "body" TEXT NOT NULL,
-    "body_html" TEXT,
+    "body_html" TEXT NOT NULL,
     "received_at" TIMESTAMP(3) NOT NULL,
     "parse_status" "ParseStatus" NOT NULL DEFAULT 'UNPARSED',
     "parser_name" TEXT,
@@ -65,6 +65,16 @@ CREATE TABLE "transaction" (
     CONSTRAINT "transaction_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "user_activity" (
+    "id" UUID NOT NULL DEFAULT uuidv7(),
+    "user_id" UUID NOT NULL,
+    "action" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "user_activity_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
@@ -83,6 +93,9 @@ CREATE INDEX "email_notification_user_id_parse_status_idx" ON "email_notificatio
 -- CreateIndex
 CREATE INDEX "transaction_user_id_transaction_date_idx" ON "transaction"("user_id", "transaction_date");
 
+-- CreateIndex
+CREATE INDEX "user_activity_user_id_created_at_idx" ON "user_activity"("user_id", "created_at");
+
 -- AddForeignKey
 ALTER TABLE "category" ADD CONSTRAINT "category_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -97,3 +110,6 @@ ALTER TABLE "transaction" ADD CONSTRAINT "transaction_user_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "transaction" ADD CONSTRAINT "transaction_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "category"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_activity" ADD CONSTRAINT "user_activity_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
