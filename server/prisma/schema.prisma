@@ -46,6 +46,7 @@ model EmailNotification {
   id            String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
   userId        String       @db.Uuid @map("user_id")
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId     String       @unique @map("message_id")
   fromAddress   String       @map("from_address")
   subject       String
   body          String
@@ -78,6 +79,9 @@ model Transaction {
   currency              String    @db.Char(3)
   merchant              String
   description           String?
+  cardLastFour          String?   @map("card_last_four")
+  operationNumber       String?   @map("operation_number")
+  operationType         String?   @map("operation_type")
   transactionDate       DateTime  @map("transaction_date")
   isManuallyCategorized Boolean   @default(false) @map("is_manually_categorized")
   email                 EmailNotification?

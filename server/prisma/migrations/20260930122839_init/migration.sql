@@ -34,6 +34,7 @@ CREATE TABLE "category" (
 CREATE TABLE "email_notification" (
     "id" UUID NOT NULL DEFAULT uuidv7(),
     "user_id" UUID NOT NULL,
+    "message_id" TEXT NOT NULL,
     "from_address" TEXT NOT NULL,
     "subject" TEXT NOT NULL,
     "body" TEXT NOT NULL,
@@ -57,6 +58,9 @@ CREATE TABLE "transaction" (
     "currency" CHAR(3) NOT NULL,
     "merchant" TEXT NOT NULL,
     "description" TEXT,
+    "card_last_four" TEXT,
+    "operation_number" TEXT,
+    "operation_type" TEXT,
     "transaction_date" TIMESTAMP(3) NOT NULL,
     "is_manually_categorized" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,6 +87,9 @@ CREATE UNIQUE INDEX "user_webhook_token_key" ON "user"("webhook_token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "category_user_id_name_key" ON "category"("user_id", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "email_notification_message_id_key" ON "email_notification"("message_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "email_notification_transaction_id_key" ON "email_notification"("transaction_id");
