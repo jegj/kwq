@@ -33,10 +33,7 @@ describe('BcpParser', () => {
   });
 
   it('parses a PEN (S/) credit card consumption email', () => {
-    const email = {
-      ...loadFixture('bcp-consumo'),
-      body: loadFixture('bcp-consumo').body.replaceAll('$ 59.38', 'S/ 59.38'),
-    };
+    const email = loadFixture('bcp-consumo-pen');
 
     const transaction = parser.parse(email);
 
