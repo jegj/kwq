@@ -54,6 +54,18 @@ describe('BcpParser', () => {
     expect(parser.parse(email).operationType).toBe('DEBIT');
   });
 
+  it('maps operationType to UNKNOWN when neither card type matches', () => {
+    const email = {
+      ...loadFixture('bcp-consumo'),
+      body: loadFixture('bcp-consumo').body.replace(
+        /Tarjeta de Crédito BCP/g,
+        'Tarjeta Prepago BCP',
+      ),
+    };
+
+    expect(parser.parse(email).operationType).toBe('UNKNOWN');
+  });
+
   it('does not claim an unrelated email', () => {
     const email = { ...loadFixture('bcp-consumo'), subject: 'Hello there' };
 
@@ -65,6 +77,12 @@ describe('BcpParser', () => {
       ...loadFixture('bcp-consumo'),
       body: 'Realizaste un consumo pero el cuerpo esta incompleto',
     };
+
+    expect(() => parser.parse(email)).toThrow(ParseError);
+  });
+
+  it('throws ParseError on a malformed email missing the merchant field', () => {
+    const email = loadFixture('failed/bcp-missing-merchant');
 
     expect(() => parser.parse(email)).toThrow(ParseError);
   });

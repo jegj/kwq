@@ -40,6 +40,12 @@ function stripTrailingPeriod(value: string): string {
   return value.replace(/\.$/, '');
 }
 
+function matchOperationType(body: string): OperationType {
+  if (body.includes('Tarjeta de Crédito BCP')) return OperationType.CREDIT;
+  if (body.includes('Tarjeta de Débito BCP')) return OperationType.DEBIT;
+  return OperationType.UNKNOWN;
+}
+
 function parseAmount(body: string): { amount: string; currency: string } {
   const match = body.match(/Total del consumo \*(\$|S\/)\s*([\d,]+\.\d{2})\*/);
   if (!match) {
@@ -119,9 +125,7 @@ export class BcpParser implements BankParser {
       operationDescription: operationDescription
         ? stripTrailingPeriod(operationDescription)
         : null,
-      operationType: body.includes('Tarjeta de Crédito BCP')
-        ? OperationType.CREDIT
-        : OperationType.UNKNOWN,
+      operationType: matchOperationType(body),
       operationNumber,
       cardLastFour,
       transactionDate: parseTransactionDate(body),
