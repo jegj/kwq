@@ -1,3 +1,4 @@
+import { OperationType } from '@prisma/client';
 import type { GmailWebhookDto } from '../../dto/email-webhook.dto.js';
 import {
   type BankParser,
@@ -98,7 +99,7 @@ export class BcpParser implements BankParser {
       throw new ParseError('Could not find merchant in email body');
     }
 
-    const operationType = matchField(
+    const operationDescription = matchField(
       body,
       /Operaci[oó]n realizada \*([^*]+)\*/,
     );
@@ -115,7 +116,12 @@ export class BcpParser implements BankParser {
       amount,
       currency,
       merchant: stripTrailingPeriod(merchant),
-      operationType: operationType ? stripTrailingPeriod(operationType) : null,
+      operationDescription: operationDescription
+        ? stripTrailingPeriod(operationDescription)
+        : null,
+      operationType: body.includes('Tarjeta de Crédito BCP')
+        ? OperationType.CREDIT
+        : OperationType.UNKNOWN,
       operationNumber,
       cardLastFour,
       transactionDate: parseTransactionDate(body),

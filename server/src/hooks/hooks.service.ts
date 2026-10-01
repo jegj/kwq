@@ -36,6 +36,7 @@ export class HooksService {
           amount: parsed.amount,
           currency: parsed.currency,
           merchant: parsed.merchant,
+          operationDescription: parsed.operationDescription,
           operationType: parsed.operationType,
           operationNumber: parsed.operationNumber,
           cardLastFour: parsed.cardLastFour,

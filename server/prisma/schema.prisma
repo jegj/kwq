@@ -69,6 +69,12 @@ enum ParseStatus {
   FAILED
 }
 
+enum OperationType {
+  CREDIT
+  DEBIT
+  UNKNOWN
+}
+
 model Transaction {
   id                    String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
   userId                String    @db.Uuid @map("user_id")
@@ -81,7 +87,8 @@ model Transaction {
   description           String?
   cardLastFour          String?   @map("card_last_four")
   operationNumber       String?   @map("operation_number")
-  operationType         String?   @map("operation_type")
+  operationDescription  String?   @map("operation_description")
+  operationType         OperationType? @map("operation_type")
   transactionDate       DateTime  @map("transaction_date")
   isManuallyCategorized Boolean   @default(false) @map("is_manually_categorized")
   email                 EmailNotification?

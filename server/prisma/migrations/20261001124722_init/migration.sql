@@ -4,6 +4,9 @@ CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 -- CreateEnum
 CREATE TYPE "ParseStatus" AS ENUM ('UNPARSED', 'PARSED', 'FAILED');
 
+-- CreateEnum
+CREATE TYPE "OperationType" AS ENUM ('CREDIT', 'DEBIT', 'UNKNOWN');
+
 -- CreateTable
 CREATE TABLE "user" (
     "id" UUID NOT NULL DEFAULT uuidv7(),
@@ -60,7 +63,8 @@ CREATE TABLE "transaction" (
     "description" TEXT,
     "card_last_four" TEXT,
     "operation_number" TEXT,
-    "operation_type" TEXT,
+    "operation_description" TEXT,
+    "operation_type" "OperationType",
     "transaction_date" TIMESTAMP(3) NOT NULL,
     "is_manually_categorized" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

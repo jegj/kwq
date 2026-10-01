@@ -25,7 +25,8 @@ describe('BcpParser', () => {
       amount: '59.38',
       currency: 'USD',
       merchant: 'LA FONDA DEL TIO SRL',
-      operationType: 'Consumo Tarjeta de Crédito',
+      operationDescription: 'Consumo Tarjeta de Crédito',
+      operationType: 'CREDIT',
       operationNumber: '0000979366',
       cardLastFour: '2468',
       transactionDate: new Date('2026-09-22T23:45:00.000Z'),
@@ -39,6 +40,18 @@ describe('BcpParser', () => {
 
     expect(transaction.currency).toBe('PEN');
     expect(transaction.amount).toBe('59.38');
+  });
+
+  it('maps operations on a Tarjeta de Débito to DEBIT', () => {
+    const email = {
+      ...loadFixture('bcp-consumo'),
+      body: loadFixture('bcp-consumo').body.replace(
+        /Tarjeta de Crédito BCP/g,
+        'Tarjeta de Débito BCP',
+      ),
+    };
+
+    expect(parser.parse(email).operationType).toBe('DEBIT');
   });
 
   it('does not claim an unrelated email', () => {
