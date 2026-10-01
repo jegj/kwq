@@ -1,0 +1,20 @@
+<h1>Users</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% users.forEach((user) => { %>
+    <tr>
+      <td><%= user.email %></td>
+      <td><%= user.role %></td>
+      <td><%= user.createdAt.toLocaleDateString() %></td>
+    </tr>
+    <% }) %>
+  </tbody>
+</table>

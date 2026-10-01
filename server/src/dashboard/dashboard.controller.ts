@@ -12,6 +12,7 @@ export class DashboardController {
       title: 'Dashboard',
       page: './pages/dashboard',
       email: request.user?.email,
+      role: request.user?.role,
     };
   }
 }

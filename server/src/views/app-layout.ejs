@@ -68,6 +68,9 @@
       <div class="app-shell">
         <nav class="app-sidebar" aria-label="App navigation">
           <a href="/app/dashboard" aria-current="page">Dashboard</a>
+          <% if (role === 'ADMIN') { %>
+          <a href="/app/admin/users">Users</a>
+          <% } %>
           <span class="soon">Transactions <small>Soon</small></span>
           <span class="soon">Categories <small>Soon</small></span>
           <span class="soon">Email Notifications <small>Soon</small></span>
