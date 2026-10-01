@@ -21,6 +21,7 @@ export class UsersController {
       page: './pages/admin-users',
       email: request.user?.email,
       role: request.user?.role,
+      currentPath: request.url,
       users,
     };
   }

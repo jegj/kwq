@@ -13,6 +13,7 @@ export class DashboardController {
       page: './pages/dashboard',
       email: request.user?.email,
       role: request.user?.role,
+      currentPath: request.url,
     };
   }
 }
