@@ -1,8 +1,20 @@
 import jwt from 'jsonwebtoken';
 import type { AuthTokenPayload } from '../types/auth.types.js';
 
-const SECRET = process.env.JWT_SECRET ?? 'dev-only-secret-change-me';
 const EXPIRES_IN = '7d';
+
+export function resolveJwtSecret(
+  appEnv: string | undefined,
+  jwtSecret: string | undefined,
+): string {
+  if (jwtSecret) return jwtSecret;
+  if (appEnv === 'production') {
+    throw new Error('JWT_SECRET must be set when APP_ENV=production');
+  }
+  return 'dev-only-secret-change-me';
+}
+
+const SECRET = resolveJwtSecret(process.env.APP_ENV, process.env.JWT_SECRET);
 
 export function signAuthToken(payload: AuthTokenPayload): string {
   return jwt.sign(payload, SECRET, { expiresIn: EXPIRES_IN });
