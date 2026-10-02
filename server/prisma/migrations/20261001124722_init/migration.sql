@@ -13,7 +13,7 @@ CREATE TABLE "user" (
     "email" TEXT NOT NULL,
     "password_hash" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'USER',
-    "webhook_token" TEXT NOT NULL,
+    "webhook_token" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

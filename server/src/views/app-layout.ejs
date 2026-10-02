@@ -53,6 +53,7 @@
         ><%= email.charAt(0).toUpperCase() %></button>
         <div class="profile-dropdown" x-show="open" x-cloak>
           <span class="profile-email"><%= email %></span>
+          <a href="/app/settings">Settings</a>
           <form method="post" action="/auth/logout">
             <button type="submit" class="outline secondary">Log out</button>
           </form>

@@ -11,7 +11,7 @@ model User {
   email        String        @unique
   passwordHash String        @map("password_hash")
   role         Role          @default(USER)
-  webhookToken String        @unique @map("webhook_token")
+  webhookToken String?       @unique @map("webhook_token")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
   categories   Category[]

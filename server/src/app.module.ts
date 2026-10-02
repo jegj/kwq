@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { HooksModule } from './hooks/hooks.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { SettingsModule } from './settings/settings.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -43,6 +44,7 @@ const observeImports = isDev
     DashboardModule,
     AdminModule,
     HooksModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

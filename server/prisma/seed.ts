@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/auth/util/password.util.ts';
-import { hashWebhookToken } from '../src/hooks/util/webhook-token.util.ts';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -21,13 +20,11 @@ async function main() {
   }
 
   const password = process.env.ADMIN_PASSWORD ?? randomUUID();
-  const webhookToken = randomUUID();
   await prisma.user.create({
     data: {
       email,
       passwordHash: hashPassword(password),
       role: 'ADMIN',
-      webhookToken: hashWebhookToken(webhookToken),
     },
   });
 
@@ -36,7 +33,7 @@ async function main() {
   } else {
     console.log(`Admin account created: ${email} / ${password}`);
   }
-  console.log(`Webhook token (save this, shown once): ${webhookToken}`);
+  console.log('Generate a webhook token from Settings after logging in.');
 }
 
 main()

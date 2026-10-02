@@ -1,0 +1,91 @@
+<div
+  x-data="{
+    hasToken: <%= hasWebhookToken %>,
+    token: null,
+    confirmOpen: false,
+    generating: false,
+    error: null,
+    async generate() {
+      this.generating = true;
+      this.error = null;
+      try {
+        const response = await fetch('/app/settings/webhook-token', { method: 'POST' });
+        if (response.status === 409) {
+          this.hasToken = true;
+          this.confirmOpen = false;
+          return;
+        }
+        if (!response.ok) throw new Error('request failed');
+        const data = await response.json();
+        this.token = data.token;
+        this.hasToken = true;
+        this.confirmOpen = false;
+      } catch (e) {
+        this.error = 'Something went wrong generating the token. Try again.';
+      } finally {
+        this.generating = false;
+      }
+    },
+  }"
+>
+  <h1>Settings</h1>
+
+  <article>
+    <header>
+      <strong>Webhook token</strong>
+    </header>
+
+    <template x-if="!hasToken">
+      <p>
+        Your email watcher needs this token to send bank notifications here.
+        Generate one to finish setup.
+      </p>
+    </template>
+
+    <template x-if="hasToken && !token">
+      <p>
+        A webhook token is already set for this account. Ask your admin if
+        you need it reset.
+      </p>
+    </template>
+
+    <template x-if="token">
+      <div class="webhook-token-reveal">
+        <p>Copy this now. It won't be shown again.</p>
+        <div role="group">
+          <code x-text="token"></code>
+          <button
+            type="button"
+            class="outline secondary"
+            x-on:click="navigator.clipboard.writeText(token)"
+          >Copy</button>
+        </div>
+      </div>
+    </template>
+
+    <p class="webhook-token-error" x-show="error" x-text="error" x-cloak></p>
+
+    <button
+      type="button"
+      x-on:click="confirmOpen = true"
+      x-bind:disabled="hasToken"
+    >Generate webhook token</button>
+  </article>
+
+  <dialog x-bind:open="confirmOpen">
+    <article>
+      <header>
+        <button aria-label="Close" rel="prev" x-on:click="confirmOpen = false"></button>
+        <strong>Generate a webhook token?</strong>
+      </header>
+      <p>
+        This creates the token your email watcher needs to send bank
+        notifications here. You can't change it yourself afterward.
+      </p>
+      <footer>
+        <button type="button" class="outline secondary" x-on:click="confirmOpen = false">Cancel</button>
+        <button type="button" x-on:click="generate()" x-bind:aria-busy="generating" x-bind:disabled="generating">Generate</button>
+      </footer>
+    </article>
+  </dialog>
+</div>

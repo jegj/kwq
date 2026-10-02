@@ -114,6 +114,44 @@
         word-break: break-all;
       }
 
+      .profile-dropdown a {
+        color: var(--pico-color);
+        text-decoration: none;
+        padding: 0.25rem 0;
+      }
+
+      .profile-dropdown a:hover {
+        color: var(--pico-primary);
+      }
+
+      .webhook-token-reveal code {
+        flex: 1 1 auto;
+        overflow-wrap: anywhere;
+      }
+
+      .webhook-token-error {
+        color: var(--pico-del-color);
+      }
+
+      @media (max-width: 480px) {
+        .webhook-token-reveal [role='group'] {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .webhook-token-reveal code {
+          border-radius: var(--pico-border-radius) var(--pico-border-radius)
+            0 0;
+        }
+
+        .webhook-token-reveal [role='group'] button {
+          width: 100%;
+          margin: 0;
+          border-radius: 0 0 var(--pico-border-radius)
+            var(--pico-border-radius);
+        }
+      }
+
       [x-cloak] {
         display: none !important;
       }
