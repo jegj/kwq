@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { resolveJwtSecret, signAuthToken, verifyAuthToken } from './jwt.util.js';
+import {
+  resolveJwtSecret,
+  signAuthToken,
+  verifyAuthToken,
+} from './jwt.util.js';
 
 describe('resolveJwtSecret', () => {
   it('throws in production when JWT_SECRET is missing', () => {
@@ -15,9 +19,7 @@ describe('resolveJwtSecret', () => {
   });
 
   it('uses the provided secret when set', () => {
-    expect(resolveJwtSecret('production', 'super-secret')).toBe(
-      'super-secret',
-    );
+    expect(resolveJwtSecret('production', 'super-secret')).toBe('super-secret');
   });
 });
 

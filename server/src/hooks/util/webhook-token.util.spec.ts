@@ -7,6 +7,8 @@ describe('webhook-token.util', () => {
   });
 
   it('hashes different tokens to different values', () => {
-    expect(hashWebhookToken('a-token')).not.toBe(hashWebhookToken('another-token'));
+    expect(hashWebhookToken('a-token')).not.toBe(
+      hashWebhookToken('another-token'),
+    );
   });
 });

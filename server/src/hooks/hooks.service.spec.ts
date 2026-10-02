@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
 import { Prisma } from '@prisma/client';
+import { describe, expect, it, vi } from 'vitest';
 import type { GmailWebhookDto } from './dto/email-webhook.dto.js';
 import { HooksService } from './hooks.service.js';
 import {
-  ParseError,
   type BankParser,
   type ParsedTransaction,
+  ParseError,
 } from './parser/parser.interface.js';
 
 const email = {
@@ -51,7 +51,9 @@ function makePrismaStub(options: {
       create:
         options.notification === 'duplicate'
           ? vi.fn().mockRejectedValue(uniqueConstraintError())
-          : vi.fn().mockResolvedValue(options.notification ?? { id: 'notif-1' }),
+          : vi
+              .fn()
+              .mockResolvedValue(options.notification ?? { id: 'notif-1' }),
       update: vi.fn().mockResolvedValue({}),
     },
     transaction: { create: vi.fn().mockResolvedValue({ id: 'txn-1' }) },
