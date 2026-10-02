@@ -88,4 +88,71 @@
       </footer>
     </article>
   </dialog>
+
+  <article
+    x-data="{
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+      saving: false,
+      error: null,
+      success: false,
+      async changePassword() {
+        this.error = null;
+        this.success = false;
+        if (this.newPassword !== this.confirmPassword) {
+          this.error = 'New password and confirmation don\'t match.';
+          return;
+        }
+        this.saving = true;
+        try {
+          const response = await fetch('/app/settings/password', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              currentPassword: this.currentPassword,
+              newPassword: this.newPassword,
+            }),
+          });
+          if (response.status === 401) {
+            this.error = 'Current password is incorrect.';
+            return;
+          }
+          if (!response.ok) throw new Error('request failed');
+          this.success = true;
+          this.currentPassword = '';
+          this.newPassword = '';
+          this.confirmPassword = '';
+        } catch (e) {
+          this.error = 'Something went wrong changing your password. Try again.';
+        } finally {
+          this.saving = false;
+        }
+      },
+    }"
+  >
+    <header>
+      <strong>Change password</strong>
+    </header>
+
+    <form x-on:submit.prevent="changePassword()">
+      <label>
+        Current password
+        <input type="password" x-model="currentPassword" autocomplete="current-password" required />
+      </label>
+      <label>
+        New password
+        <input type="password" x-model="newPassword" autocomplete="new-password" minlength="8" required />
+      </label>
+      <label>
+        Confirm new password
+        <input type="password" x-model="confirmPassword" autocomplete="new-password" minlength="8" required />
+      </label>
+
+      <p class="webhook-token-error" x-show="error" x-text="error" x-cloak></p>
+      <p x-show="success" x-cloak>Password changed.</p>
+
+      <button type="submit" x-bind:aria-busy="saving" x-bind:disabled="saving">Change password</button>
+    </form>
+  </article>
 </div>

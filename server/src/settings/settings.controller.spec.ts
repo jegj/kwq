@@ -1,6 +1,7 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
+import { hashPassword } from '../auth/util/password.util.js';
 import { hashWebhookToken } from '../hooks/util/webhook-token.util.js';
 import { SettingsController } from './settings.controller.js';
 
@@ -64,6 +65,51 @@ describe('SettingsController', () => {
       const result = await controller.getSettings(requestWithUser('user-1'));
 
       expect(result.hasWebhookToken).toBe(true);
+    });
+  });
+
+  describe('changePassword', () => {
+    it('updates the password hash when the current password matches', async () => {
+      const currentHash = hashPassword('old-password');
+      const prisma = {
+        user: {
+          findUnique: vi.fn().mockResolvedValue({ passwordHash: currentHash }),
+          update: vi.fn().mockResolvedValue({}),
+        },
+      };
+      const controller = new SettingsController(prisma as any);
+
+      await controller.changePassword(requestWithUser('user-1'), {
+        currentPassword: 'old-password',
+        newPassword: 'new-password',
+      });
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { passwordHash: expect.any(String) },
+      });
+      const newHash = prisma.user.update.mock.calls[0][0].data.passwordHash;
+      expect(newHash).not.toBe(currentHash);
+    });
+
+    it('rejects when the current password is wrong', async () => {
+      const prisma = {
+        user: {
+          findUnique: vi
+            .fn()
+            .mockResolvedValue({ passwordHash: hashPassword('old-password') }),
+          update: vi.fn(),
+        },
+      };
+      const controller = new SettingsController(prisma as any);
+
+      await expect(
+        controller.changePassword(requestWithUser('user-1'), {
+          currentPassword: 'wrong-password',
+          newPassword: 'new-password',
+        }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 });
