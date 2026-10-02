@@ -2,10 +2,65 @@
   x-data="{
     dialog: null,
     selected: null,
-    openAdd() { this.selected = null; this.dialog = 'add'; },
-    openEdit(user) { this.selected = user; this.dialog = 'edit'; },
-    openDelete(user) { this.selected = user; this.dialog = 'delete'; },
+    form: { email: '', password: '', role: 'USER' },
+    submitting: false,
+    error: null,
+    openAdd() {
+      this.selected = null;
+      this.form = { email: '', password: '', role: 'USER' };
+      this.error = null;
+      this.dialog = 'add';
+    },
+    openEdit(user) {
+      this.selected = user;
+      this.form = { email: user.email, password: '', role: user.role };
+      this.error = null;
+      this.dialog = 'edit';
+    },
+    openDelete(user) { this.selected = user; this.error = null; this.dialog = 'delete'; },
     close() { this.dialog = null; this.selected = null; },
+    async save() {
+      this.submitting = true;
+      this.error = null;
+      try {
+        const response = this.dialog === 'edit'
+          ? await fetch(`/app/admin/users/${this.selected.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ role: this.form.role }),
+            })
+          : await fetch('/app/admin/users', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.form),
+            });
+        if (response.status === 409) {
+          this.error = 'A user with that email already exists.';
+          return;
+        }
+        if (!response.ok) throw new Error('request failed');
+        location.reload();
+      } catch (e) {
+        this.error = 'Something went wrong. Try again.';
+      } finally {
+        this.submitting = false;
+      }
+    },
+    async remove() {
+      this.submitting = true;
+      this.error = null;
+      try {
+        const response = await fetch(`/app/admin/users/${this.selected.id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('request failed');
+        location.reload();
+      } catch (e) {
+        this.error = 'Something went wrong. Try again.';
+      } finally {
+        this.submitting = false;
+      }
+    },
   }"
 >
   <div class="users-header">
@@ -55,27 +110,46 @@
         <button aria-label="Close" rel="prev" x-on:click="close()"></button>
         <strong x-text="dialog === 'edit' ? 'Edit user' : 'Add user'"></strong>
       </header>
-      <form x-on:submit.prevent="close()">
+      <form x-on:submit.prevent="save()">
         <label>
           Email
           <input
             type="email"
             name="email"
             required
-            x-bind:value="selected ? selected.email : ''"
+            x-model="form.email"
             x-bind:readonly="dialog === 'edit'"
           />
         </label>
+        <template x-if="dialog === 'add'">
+          <label>
+            Password
+            <input
+              type="password"
+              name="password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+              x-model="form.password"
+            />
+          </label>
+        </template>
         <label>
           Role
-          <select name="role" x-bind:value="selected ? selected.role : 'USER'">
+          <select name="role" x-model="form.role">
             <option value="USER">User</option>
             <option value="ADMIN">Admin</option>
           </select>
         </label>
+        <p class="users-form-error" role="alert" x-show="error" x-text="error" x-cloak></p>
         <footer>
           <button type="button" class="outline secondary" x-on:click="close()">Cancel</button>
-          <button type="submit" x-text="dialog === 'edit' ? 'Save changes' : 'Add user'"></button>
+          <button
+            type="submit"
+            x-bind:aria-busy="submitting"
+            x-bind:disabled="submitting"
+            x-text="dialog === 'edit' ? 'Save changes' : 'Add user'"
+          ></button>
         </footer>
       </form>
     </article>
@@ -88,9 +162,16 @@
         <strong>Delete user</strong>
       </header>
       <p>Remove <strong x-text="selected ? selected.email : ''"></strong>? This can't be undone.</p>
+      <p class="users-form-error" role="alert" x-show="error" x-text="error" x-cloak></p>
       <footer>
         <button type="button" class="outline secondary" x-on:click="close()">Cancel</button>
-        <button type="button" class="contrast" x-on:click="close()">Delete</button>
+        <button
+          type="button"
+          class="contrast"
+          x-on:click="remove()"
+          x-bind:aria-busy="submitting"
+          x-bind:disabled="submitting"
+        >Delete</button>
       </footer>
     </article>
   </dialog>

@@ -150,6 +150,20 @@
           border-radius: 0 0 var(--pico-border-radius)
             var(--pico-border-radius);
         }
+
+        dialog article {
+          padding: 1rem;
+        }
+
+        dialog footer {
+          flex-direction: column-reverse;
+          align-items: stretch;
+        }
+
+        dialog footer button {
+          width: 100%;
+          margin: 0;
+        }
       }
 
       [x-cloak] {
@@ -181,6 +195,17 @@
         width: auto;
         padding: 0.25rem 0.75rem;
         margin: 0;
+      }
+
+      .users-form-error {
+        margin: 0 0 1rem;
+        padding: 0.65rem 0.85rem;
+        border-left: 3px solid var(--pico-del-color);
+        border-radius: var(--pico-border-radius);
+        background: color-mix(in srgb, var(--pico-del-color) 14%, transparent);
+        color: var(--pico-del-color);
+        font-size: 0.875rem;
+        line-height: 1.4;
       }
 
       @media (max-width: 640px) {
