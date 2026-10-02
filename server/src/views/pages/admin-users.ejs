@@ -1,20 +1,97 @@
-<h1>Users</h1>
+<div
+  x-data="{
+    dialog: null,
+    selected: null,
+    openAdd() { this.selected = null; this.dialog = 'add'; },
+    openEdit(user) { this.selected = user; this.dialog = 'edit'; },
+    openDelete(user) { this.selected = user; this.dialog = 'delete'; },
+    close() { this.dialog = null; this.selected = null; },
+  }"
+>
+  <div class="users-header">
+    <h1>Users</h1>
+    <button type="button" x-on:click="openAdd()">Add user</button>
+  </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Email</th>
-      <th>Role</th>
-      <th>Created</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% users.forEach((user) => { %>
-    <tr>
-      <td><%= user.email %></td>
-      <td><%= user.role %></td>
-      <td><%= user.createdAt.toLocaleDateString() %></td>
-    </tr>
-    <% }) %>
-  </tbody>
-</table>
+  <% if (users.length === 0) { %>
+  <p class="users-empty">No other users yet. Add one to get started.</p>
+  <% } else { %>
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Created</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach((user) => { %>
+      <tr>
+        <td data-label="Email"><%= user.email %></td>
+        <td data-label="Role"><%= user.role %></td>
+        <td data-label="Created"><%= user.createdAt.toLocaleDateString() %></td>
+        <td class="users-row-actions">
+          <button
+            type="button"
+            class="outline secondary"
+            x-on:click='openEdit(<%- JSON.stringify({ id: user.id, email: user.email, role: user.role }) %>)'
+          >Edit</button>
+          <button
+            type="button"
+            class="outline contrast"
+            x-on:click='openDelete(<%- JSON.stringify({ id: user.id, email: user.email }) %>)'
+          >Delete</button>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+
+  <dialog x-bind:open="dialog === 'add' || dialog === 'edit'">
+    <article>
+      <header>
+        <button aria-label="Close" rel="prev" x-on:click="close()"></button>
+        <strong x-text="dialog === 'edit' ? 'Edit user' : 'Add user'"></strong>
+      </header>
+      <form x-on:submit.prevent="close()">
+        <label>
+          Email
+          <input
+            type="email"
+            name="email"
+            required
+            x-bind:value="selected ? selected.email : ''"
+            x-bind:readonly="dialog === 'edit'"
+          />
+        </label>
+        <label>
+          Role
+          <select name="role" x-bind:value="selected ? selected.role : 'USER'">
+            <option value="USER">User</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </label>
+        <footer>
+          <button type="button" class="outline secondary" x-on:click="close()">Cancel</button>
+          <button type="submit" x-text="dialog === 'edit' ? 'Save changes' : 'Add user'"></button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <dialog x-bind:open="dialog === 'delete'">
+    <article>
+      <header>
+        <button aria-label="Close" rel="prev" x-on:click="close()"></button>
+        <strong>Delete user</strong>
+      </header>
+      <p>Remove <strong x-text="selected ? selected.email : ''"></strong>? This can't be undone.</p>
+      <footer>
+        <button type="button" class="outline secondary" x-on:click="close()">Cancel</button>
+        <button type="button" class="contrast" x-on:click="close()">Delete</button>
+      </footer>
+    </article>
+  </dialog>
+</div>

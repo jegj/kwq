@@ -118,6 +118,80 @@
         display: none !important;
       }
 
+      .users-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .users-header button {
+        width: auto;
+      }
+
+      .users-empty {
+        color: var(--pico-muted-color);
+      }
+
+      .users-row-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+      }
+
+      .users-row-actions button {
+        width: auto;
+        padding: 0.25rem 0.75rem;
+        margin: 0;
+      }
+
+      @media (max-width: 640px) {
+        .users-header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .users-header button {
+          width: 100%;
+        }
+
+        table thead {
+          display: none;
+        }
+
+        table,
+        table tbody,
+        table tr,
+        table td {
+          display: block;
+          width: 100%;
+        }
+
+        table tr {
+          margin-bottom: 1rem;
+          padding: 0.75rem;
+          border: 1px solid var(--pico-muted-border-color);
+          border-radius: var(--pico-border-radius);
+        }
+
+        table td {
+          border: none;
+          padding: 0.35rem 0;
+        }
+
+        table td:not(.users-row-actions)::before {
+          content: attr(data-label);
+          display: block;
+          font-size: 0.75rem;
+          color: var(--pico-muted-color);
+        }
+
+        .users-row-actions {
+          justify-content: flex-start;
+          padding-top: 0.5rem;
+        }
+      }
+
       .sidebar-toggle {
         display: none;
       }

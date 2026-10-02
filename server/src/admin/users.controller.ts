@@ -13,6 +13,7 @@ export class UsersController {
   @Render('app-layout')
   async getUsers(@Req() request: FastifyRequest) {
     const users = await this.prisma.user.findMany({
+      where: { id: { not: request.user?.id } },
       orderBy: { createdAt: 'asc' },
       select: { id: true, email: true, role: true, createdAt: true },
     });
