@@ -3,7 +3,7 @@
   <head>
     <%- include('./partials/head') %>
   </head>
-  <body x-data="{ sidebarOpen: false }" x-bind:class="sidebarOpen ? 'sidebar-open' : ''">
+  <body x-data="{ sidebarOpen: false }">
     <header class="container app-header">
       <span
         style="
@@ -61,12 +61,12 @@
       </div>
     </header>
     <main class="container">
-      <div
-        class="sidebar-backdrop"
-        x-on:click="sidebarOpen = false"
-        aria-hidden="true"
-      ></div>
-      <div class="app-shell">
+      <div class="app-shell" x-bind:class="sidebarOpen ? 'sidebar-open' : ''">
+        <div
+          class="sidebar-backdrop"
+          x-on:click="sidebarOpen = false"
+          aria-hidden="true"
+        ></div>
         <nav class="app-sidebar" aria-label="App navigation">
           <a href="/app/dashboard" <% if (currentPath === '/app/dashboard') { %>aria-current="page"<% } %>>Dashboard</a>
           <% if (role === 'ADMIN') { %>

@@ -29,6 +29,10 @@
         flex: 0 0 14rem;
         display: flex;
         flex-direction: column;
+        /* Pico's base `nav` rule sets justify-content: space-between for
+           horizontal navbars; override it or a column nav spreads its
+           links across the full height instead of stacking them. */
+        justify-content: flex-start;
         gap: 0.25rem;
       }
 
@@ -264,6 +268,13 @@
       }
 
       @media (max-width: 768px) {
+        /* Pico scales --pico-font-size up from 576px, for desktop reading
+           comfort. The overlay drawer below is sized in rem and wants to
+           stay compact, so pin the scale back down while it's in play. */
+        :root {
+          --pico-font-size: 100%;
+        }
+
         .sidebar-toggle {
           display: inline-flex;
         }
