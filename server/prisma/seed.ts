@@ -8,8 +8,28 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
+const defaultCategories = [
+  { name: 'Comida', icon: '🍔', color: '#f97316' },
+  { name: 'Servicios Basicos', icon: '💡', color: '#eab308' },
+  { name: 'Medicina', icon: '💊', color: '#ef4444' },
+  { name: 'Otras Compras', icon: '🛍️', color: '#a855f7' },
+  { name: 'Carro', icon: '🚗', color: '#3b82f6' },
+];
+
+async function seedDefaultCategories() {
+  for (const category of defaultCategories) {
+    const existing = await prisma.category.findFirst({
+      where: { userId: null, name: category.name },
+    });
+    if (existing) continue;
+
+    await prisma.category.create({ data: { userId: null, ...category } });
+  }
+}
+
 async function main() {
   await prisma.$connect();
+  await seedDefaultCategories();
 
   const email = process.env.ADMIN_EMAIL ?? 'admin@kwq.local';
 
