@@ -7,7 +7,6 @@ import {
   Render,
   Req,
   Res,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -36,7 +35,13 @@ export class AuthController {
   ) {
     const user = await this.authService.validateUser(email, password);
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      reply.status(HttpStatus.UNAUTHORIZED).view('layout', {
+        title: 'Log in',
+        page: './pages/login',
+        error: 'Invalid email or password',
+        email,
+      });
+      return;
     }
     await this.authService.recordLogin(user.id);
 
