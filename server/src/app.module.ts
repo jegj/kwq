@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './admin/admin.module.js';
 import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
+import { CategoriesModule } from './categories/categories.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { HooksModule } from './hooks/hooks.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -43,6 +44,7 @@ const observeImports = isDev
     AuthModule,
     DashboardModule,
     AdminModule,
+    CategoriesModule,
     HooksModule,
     SettingsModule,
   ],

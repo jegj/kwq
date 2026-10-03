@@ -212,13 +212,90 @@
         line-height: 1.4;
       }
 
+      .categories-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .categories-header button {
+        width: auto;
+      }
+
+      .categories-empty {
+        color: var(--pico-muted-color);
+      }
+
+      .categories-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.2rem 0.7rem 0.2rem 0.3rem;
+        border-left: 3px solid var(--category-color);
+        background: color-mix(in srgb, var(--category-color) 16%, transparent);
+        border-radius: var(--pico-border-radius);
+      }
+
+      .categories-icon {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.6rem;
+        height: 1.6rem;
+        border-radius: 50%;
+        background: var(--category-color);
+        font-size: 0.9rem;
+      }
+
+      .categories-hex {
+        font-size: 0.8rem;
+        background: none;
+        padding: 0;
+        color: var(--pico-muted-color);
+      }
+
+      .categories-badge {
+        display: inline-block;
+        padding: 0.1rem 0.6rem;
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        color: var(--pico-muted-color);
+      }
+
+      .categories-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      .categories-actions button {
+        width: auto;
+        padding: 0.25rem 0.75rem;
+        margin: 0;
+      }
+
+      .categories-form-error {
+        margin: 0 0 1rem;
+        padding: 0.65rem 0.85rem;
+        border-left: 3px solid var(--pico-del-color);
+        border-radius: var(--pico-border-radius);
+        background: color-mix(in srgb, var(--pico-del-color) 14%, transparent);
+        color: var(--pico-del-color);
+        font-size: 0.875rem;
+        line-height: 1.4;
+      }
+
       @media (max-width: 640px) {
-        .users-header {
+        .users-header,
+        .categories-header {
           flex-direction: column;
           align-items: stretch;
         }
 
-        .users-header button {
+        .users-header button,
+        .categories-header button {
           width: 100%;
         }
 
@@ -246,7 +323,7 @@
           padding: 0.35rem 0;
         }
 
-        table td:not(.users-row-actions)::before {
+        table td:not(.users-row-actions):not(.categories-row-actions)::before {
           content: attr(data-label);
           display: block;
           font-size: 0.75rem;
@@ -254,6 +331,11 @@
         }
 
         .users-row-actions {
+          justify-content: flex-start;
+          padding-top: 0.5rem;
+        }
+
+        .categories-actions {
           justify-content: flex-start;
           padding-top: 0.5rem;
         }

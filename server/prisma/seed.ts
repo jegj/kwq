@@ -11,7 +11,7 @@ const prisma = new PrismaClient({
 const defaultCategories = [
   { name: 'Comida', icon: '🍔', color: '#f97316' },
   { name: 'Servicios Basicos', icon: '💡', color: '#eab308' },
-  { name: 'Medicina', icon: '💊', color: '#ef4444' },
+  { name: 'Medicina', icon: '💊', color: '#14b8a6' },
   { name: 'Otras Compras', icon: '🛍️', color: '#a855f7' },
   { name: 'Carro', icon: '🚗', color: '#3b82f6' },
 ];
