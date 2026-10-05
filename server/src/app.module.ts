@@ -6,6 +6,7 @@ import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { EmailsModule } from './emails/emails.module.js';
 import { HooksModule } from './hooks/hooks.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
@@ -45,6 +46,7 @@ const observeImports = isDev
     DashboardModule,
     AdminModule,
     CategoriesModule,
+    EmailsModule,
     HooksModule,
     SettingsModule,
   ],

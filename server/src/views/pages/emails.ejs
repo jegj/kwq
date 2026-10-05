@@ -1,0 +1,56 @@
+<div class="categories-header">
+  <h1>Email Notifications</h1>
+  <form method="get" action="/app/emails" class="emails-filter">
+    <label>
+      Month
+      <input type="month" name="month" value="<%= month ?? '' %>" />
+    </label>
+    <button type="submit">Filter</button>
+    <% if (month) { %>
+    <a href="/app/emails" role="button" class="outline secondary">Clear</a>
+    <% } %>
+  </form>
+</div>
+
+<% if (emails.length === 0) { %>
+<p class="categories-empty">No email notifications<%= month ? ' for this month' : ' yet' %>.</p>
+<% } else { %>
+<table>
+  <thead>
+    <tr>
+      <th>Parser</th>
+      <th>Status</th>
+      <th>Message ID</th>
+      <th>Created</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% emails.forEach((item) => { %>
+    <tr class="emails-row" x-data x-on:click="location.href = '/app/emails/<%= item.id %>'">
+      <td data-label="Parser"><%= item.parserName ?? '—' %></td>
+      <td data-label="Status"><%= item.parseStatus %></td>
+      <td data-label="Message ID"><code class="categories-hex"><%= item.messageId %></code></td>
+      <td data-label="Created"><time datetime="<%= item.createdAt.toISOString() %>"><%= item.createdAt.toLocaleString('en-US', { timeZone: 'America/Lima' }) %></time></td>
+      <td class="emails-row-actions">
+        <div class="categories-actions">
+          <a href="/app/emails/<%= item.id %>" role="button" class="outline secondary" x-on:click.stop>View</a>
+        </div>
+      </td>
+    </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<%
+  const monthQuery = month ? `&month=${month}` : '';
+%>
+<nav class="emails-pager" aria-label="Pagination">
+  <% if (newerCursor) { %>
+  <a href="/app/emails?after=<%= newerCursor %><%= monthQuery %>" role="button" class="outline secondary">&larr; Newer</a>
+  <% } else { %><span></span><% } %>
+  <% if (olderCursor) { %>
+  <a href="/app/emails?before=<%= olderCursor %><%= monthQuery %>" role="button" class="outline secondary">Older &rarr;</a>
+  <% } %>
+</nav>
+<% } %>

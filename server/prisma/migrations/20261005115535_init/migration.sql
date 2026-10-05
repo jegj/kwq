@@ -99,7 +99,7 @@ CREATE UNIQUE INDEX "email_notification_message_id_key" ON "email_notification"(
 CREATE UNIQUE INDEX "email_notification_transaction_id_key" ON "email_notification"("transaction_id");
 
 -- CreateIndex
-CREATE INDEX "email_notification_user_id_parse_status_idx" ON "email_notification"("user_id", "parse_status");
+CREATE INDEX "email_notification_user_id_created_at_id_idx" ON "email_notification"("user_id", "created_at" DESC, "id" DESC);
 
 -- CreateIndex
 CREATE INDEX "transaction_user_id_transaction_date_idx" ON "transaction"("user_id", "transaction_date");

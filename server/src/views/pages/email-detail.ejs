@@ -1,0 +1,28 @@
+<div class="categories-header">
+  <h1><%= notification.subject %></h1>
+  <a href="/app/emails" role="button" class="outline secondary">Back to list</a>
+</div>
+
+<dl class="emails-meta">
+  <dt>From</dt><dd><%= notification.fromAddress %></dd>
+  <dt>Received</dt><dd><%= notification.receivedAt.toLocaleString('en-US', { timeZone: 'America/Lima' }) %></dd>
+  <dt>Status</dt><dd><%= notification.parseStatus %></dd>
+  <dt>Parser</dt><dd><%= notification.parserName ?? '—' %></dd>
+  <dt>Message ID</dt><dd><code class="categories-hex"><%= notification.messageId %></code></dd>
+</dl>
+
+<% if (notification.bodyHtml) { %>
+<%# ponytail: sandbox="" blocks scripts/forms/same-origin; the CSP meta is a second layer. Remote images stay allowed (bank logos), so tracking pixels load too. %>
+<%
+  const cspMeta = `<meta http-equiv="Content-Security-Policy" content="script-src 'none'; object-src 'none'; form-action 'none'">`;
+%>
+<iframe
+  class="emails-preview"
+  title="Email preview"
+  sandbox=""
+  referrerpolicy="no-referrer"
+  srcdoc="<%= cspMeta + notification.bodyHtml %>"
+></iframe>
+<% } else { %>
+<pre><%= notification.body %></pre>
+<% } %>

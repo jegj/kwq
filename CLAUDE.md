@@ -187,7 +187,12 @@ per the stack decision above); JSON endpoints exist only for mutations
     create/edit/delete
   - `POST /app/categories` / `PATCH /app/categories/:id` /
     `DELETE /app/categories/:id`
-  - `GET /app/emails` — reserved, list only for now (no filter/detail yet)
+  - `GET /app/emails` — read-only list, own rows only. Keyset-paginated on
+    `(createdAt DESC, id DESC)`, 20 per page: `?before=<cursor>` (older) /
+    `?after=<cursor>` (newer), cursor = `<createdAtMs>_<id>`. Optional
+    `?month=YYYY-MM` filter, boundaries in America/Lima (fixed UTC-5).
+  - `GET /app/emails/:id` — metadata + sandboxed-iframe preview of `bodyHtml`
+    (falls back to plain `body`); 404 for other users' emails
 - **Admin** (role-guarded, nested under `/app`)
   - `GET /app/admin/users` — single management page: list + inline
     create/edit/delete
@@ -198,7 +203,7 @@ per the stack decision above); JSON endpoints exist only for mutations
   - `DELETE /app/admin/users/:id` — remove
 
 Conventions: raw UUIDs in paths (matches Prisma PKs), no query-param
-filtering on lists for v1.
+filtering on lists for v1 (exception: `/app/emails` cursor + `month`).
 
 ## Open follow-ups (not yet decided)
 

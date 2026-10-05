@@ -74,7 +74,7 @@
           <% } %>
           <span class="soon">Transactions <small>Soon</small></span>
           <a href="/app/categories" <% if (currentPath === '/app/categories') { %>aria-current="page"<% } %>>Categories</a>
-          <span class="soon">Email Notifications <small>Soon</small></span>
+          <a href="/app/emails" <% if (currentPath === '/app/emails') { %>aria-current="page"<% } %>>Email Notifications</a>
         </nav>
         <div class="app-content">
           <%- include(page) %>
