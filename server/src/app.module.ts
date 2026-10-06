@@ -10,6 +10,7 @@ import { EmailsModule } from './emails/emails.module.js';
 import { HooksModule } from './hooks/hooks.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { TransactionsModule } from './transactions/transactions.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -49,6 +50,7 @@ const observeImports = isDev
     EmailsModule,
     HooksModule,
     SettingsModule,
+    TransactionsModule,
   ],
 })
 export class AppModule {}

@@ -3,7 +3,7 @@ import {
   formatCursor,
   monthRange,
   parseCursor,
-} from './email-pagination.util.js';
+} from './pagination.util.js';
 
 const ID = '0192a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b';
 
@@ -30,10 +30,10 @@ describe('monthRange', () => {
 });
 
 describe('cursor', () => {
-  it('round-trips createdAt and id', () => {
-    const createdAt = new Date('2026-09-29T12:23:35.123Z');
-    expect(parseCursor(formatCursor({ createdAt, id: ID }))).toEqual({
-      createdAt,
+  it('round-trips date and id', () => {
+    const date = new Date('2026-09-29T12:23:35.123Z');
+    expect(parseCursor(formatCursor({ date, id: ID }))).toEqual({
+      date,
       id: ID,
     });
   });

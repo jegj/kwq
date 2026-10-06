@@ -9,6 +9,7 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import ejs from 'ejs';
+import { formatDateTime, formatMoney, titleCase } from './common/format.util.js';
 import { Logger } from 'nestjs-pino';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { RedirectExceptionFilter } from './auth/redirect/redirect.exception.js';
@@ -29,6 +30,7 @@ async function bootstrap() {
   await app.register(fastifyView, {
     engine: { ejs },
     root: join(import.meta.dirname, 'views'),
+    defaultContext: { fmt: { formatMoney, formatDateTime, titleCase } },
   });
   await app.register(fastifyCookie);
 

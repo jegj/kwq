@@ -1,0 +1,36 @@
+<div x-data="transactionForm(true)">
+  <div class="categories-header">
+    <h1><%= fmt.titleCase(transaction.merchant) %></h1>
+    <div class="categories-actions">
+      <a href="/app/transactions" role="button" class="outline secondary">Back to list</a>
+      <button
+        type="button"
+        class="outline secondary"
+        data-transaction="<%= JSON.stringify(transaction) %>"
+        x-on:click="openEdit(JSON.parse($el.dataset.transaction))"
+      >Edit</button>
+      <button
+        type="button"
+        class="outline secondary"
+        data-transaction="<%= JSON.stringify({ id: transaction.id, merchant: transaction.merchant }) %>"
+        x-on:click="openDelete(JSON.parse($el.dataset.transaction))"
+      >Delete</button>
+    </div>
+  </div>
+
+  <dl class="emails-meta">
+    <dt>Amount</dt><dd><%= fmt.formatMoney(transaction.amount, transaction.currency) %></dd>
+    <dt>Date</dt><dd><%= fmt.formatDateTime(transaction.transactionDate) %></dd>
+    <dt>Type</dt><dd><%= transaction.operationType ?? '—' %></dd>
+    <dt>Category</dt><dd><%= transaction.category ? transaction.category.name : '—' %></dd>
+    <dt>Description</dt><dd><%= transaction.description ?? '—' %></dd>
+    <dt>Card</dt><dd><%= transaction.cardLastFour ? '•••• ' + transaction.cardLastFour : '—' %></dd>
+    <dt>Operation number</dt><dd><%= transaction.operationNumber ?? '—' %></dd>
+    <dt>Operation description</dt><dd><%= transaction.operationDescription ?? '—' %></dd>
+    <% if (transaction.email) { %>
+    <dt>Source email</dt><dd><a href="/app/emails/<%= transaction.email.id %>">View email</a></dd>
+    <% } %>
+  </dl>
+
+  <%- include('../partials/transaction-dialogs') %>
+</div>

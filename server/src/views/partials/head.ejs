@@ -217,6 +217,61 @@
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .categories-header h1 {
+        margin: 0;
+        font-size: 1.75rem;
+      }
+
+      .amount {
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .amount-credit {
+        color: var(--pico-ins-color);
+      }
+
+      .categories-badge.badge-ok {
+        color: var(--pico-ins-color);
+      }
+
+      .categories-badge.badge-fail {
+        color: var(--pico-del-color);
+      }
+
+      .list-table th,
+      .list-table td {
+        padding-inline: 0.6rem;
+      }
+
+      .emails-row-actions a {
+        white-space: nowrap;
+      }
+
+      .month-total {
+        margin: 0 0 1rem;
+        color: var(--pico-muted-color);
+      }
+
+      .month-total strong {
+        color: var(--pico-color);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .toast {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 100;
+        padding: 0.65rem 1rem;
+        border-left: 3px solid var(--pico-ins-color);
+        border-radius: var(--pico-border-radius);
+        background: var(--pico-card-background-color);
+        box-shadow: var(--pico-card-box-shadow);
       }
 
       .categories-header button {
@@ -270,10 +325,19 @@
         align-items: center;
       }
 
-      .categories-actions button {
+      .categories-actions {
+        flex-wrap: wrap;
+      }
+
+      .categories-actions button,
+      .categories-actions a[role="button"] {
         width: auto;
         padding: 0.25rem 0.75rem;
         margin: 0;
+        font-size: 1rem;
+        line-height: 1.5;
+        min-width: 6rem;
+        text-align: center;
       }
 
       .categories-form-error {
@@ -291,6 +355,7 @@
         display: flex;
         align-items: end;
         gap: 0.5rem;
+        margin-bottom: 1rem;
       }
 
       .emails-filter label {
@@ -386,6 +451,19 @@
           padding: 0.35rem 0;
         }
 
+        .amount {
+          text-align: left;
+        }
+
+        .emails-row-actions:empty {
+          display: none;
+        }
+
+        .toast {
+          right: 1rem;
+          left: 1rem;
+        }
+
         .emails-filter {
           flex-wrap: wrap;
         }
@@ -425,6 +503,13 @@
         .categories-actions {
           justify-content: flex-start;
           padding-top: 0.5rem;
+        }
+
+        /* Equal-width action buttons across the card. */
+        .categories-actions button,
+        .categories-actions a[role="button"] {
+          flex: 1 1 0;
+          text-align: center;
         }
       }
 

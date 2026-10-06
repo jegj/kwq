@@ -17,7 +17,7 @@ import {
   formatCursor,
   monthRange,
   parseCursor,
-} from './email-pagination.util.js';
+} from '../common/pagination.util.js';
 
 const PAGE_SIZE = 20;
 const CURRENT_PATH = '/app/emails';
@@ -49,14 +49,14 @@ export class EmailsController {
     }
     if (before) {
       where.OR = [
-        { createdAt: { lt: before.createdAt } },
-        { createdAt: before.createdAt, id: { lt: before.id } },
+        { createdAt: { lt: before.date } },
+        { createdAt: before.date, id: { lt: before.id } },
       ];
     }
     if (after) {
       where.OR = [
-        { createdAt: { gt: after.createdAt } },
-        { createdAt: after.createdAt, id: { gt: after.id } },
+        { createdAt: { gt: after.date } },
+        { createdAt: after.date, id: { gt: after.id } },
       ];
     }
 
@@ -71,6 +71,7 @@ export class EmailsController {
         parserName: true,
         parseStatus: true,
         messageId: true,
+        transactionId: true,
         createdAt: true,
       },
     });
@@ -92,8 +93,8 @@ export class EmailsController {
       currentPath: CURRENT_PATH,
       emails,
       month: month ? query.month : null,
-      olderCursor: hasOlder ? formatCursor(last) : null,
-      newerCursor: hasNewer ? formatCursor(first) : null,
+      olderCursor: hasOlder ? formatCursor({ date: last.createdAt, id: last.id }) : null,
+      newerCursor: hasNewer ? formatCursor({ date: first.createdAt, id: first.id }) : null,
     };
   }
 

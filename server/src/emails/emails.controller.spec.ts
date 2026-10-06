@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { EmailsController } from './emails.controller.js';
-import { formatCursor } from './email-pagination.util.js';
+import { formatCursor } from '../common/pagination.util.js';
 
 const PAGE_SIZE = 20;
 const UUID = (n: number) =>
@@ -14,6 +14,9 @@ function requestWithUser(id: string): FastifyRequest {
     user: { id, role: 'USER', email: 'user@example.com' },
   } as any;
 }
+
+const cursorOf = (row: { createdAt: Date; id: string }) =>
+  formatCursor({ date: row.createdAt, id: row.id });
 
 function emailRow(n: number) {
   return {
@@ -51,6 +54,7 @@ describe('EmailsController', () => {
           parserName: true,
           parseStatus: true,
           messageId: true,
+          transactionId: true,
           createdAt: true,
         },
       });
@@ -67,7 +71,7 @@ describe('EmailsController', () => {
       const result = await controller.getEmails(requestWithUser('user-1'), {});
 
       expect(result.emails).toHaveLength(PAGE_SIZE);
-      expect(result.olderCursor).toBe(formatCursor(rows[PAGE_SIZE - 1] as any));
+      expect(result.olderCursor).toBe(cursorOf(rows[PAGE_SIZE - 1]));
       expect(result.newerCursor).toBeNull();
     });
 
@@ -76,7 +80,7 @@ describe('EmailsController', () => {
       const { prisma, controller } = controllerWith([emailRow(6)]);
 
       const result = await controller.getEmails(requestWithUser('user-1'), {
-        before: formatCursor(cursor),
+        before: cursorOf(cursor),
       });
 
       expect(prisma.emailNotification.findMany).toHaveBeenCalledWith(
@@ -91,7 +95,7 @@ describe('EmailsController', () => {
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         }),
       );
-      expect(result.newerCursor).toBe(formatCursor(emailRow(6)));
+      expect(result.newerCursor).toBe(cursorOf(emailRow(6)));
     });
 
     it('pages newer by querying ascending and restoring newest-first order', async () => {
@@ -99,7 +103,7 @@ describe('EmailsController', () => {
       const { prisma, controller } = controllerWith([emailRow(4), emailRow(3)]);
 
       const result = await controller.getEmails(requestWithUser('user-1'), {
-        after: formatCursor(cursor),
+        after: cursorOf(cursor),
       });
 
       expect(prisma.emailNotification.findMany).toHaveBeenCalledWith(
@@ -118,7 +122,7 @@ describe('EmailsController', () => {
         UUID(3),
         UUID(4),
       ]);
-      expect(result.olderCursor).toBe(formatCursor(emailRow(4)));
+      expect(result.olderCursor).toBe(cursorOf(emailRow(4)));
       expect(result.newerCursor).toBeNull();
     });
 
@@ -149,7 +153,7 @@ describe('EmailsController', () => {
 
       await controller.getEmails(requestWithUser('user-1'), {
         month: '2026-09',
-        before: formatCursor(cursor),
+        before: cursorOf(cursor),
       });
 
       const { where } = prisma.emailNotification.findMany.mock.calls[0][0];

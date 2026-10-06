@@ -72,7 +72,7 @@
           <% if (role === 'ADMIN') { %>
           <a href="/app/admin/users" <% if (currentPath === '/app/admin/users') { %>aria-current="page"<% } %>>Users</a>
           <% } %>
-          <span class="soon">Transactions <small>Soon</small></span>
+          <a href="/app/transactions" <% if (currentPath === '/app/transactions') { %>aria-current="page"<% } %>>Transactions</a>
           <a href="/app/categories" <% if (currentPath === '/app/categories') { %>aria-current="page"<% } %>>Categories</a>
           <a href="/app/emails" <% if (currentPath === '/app/emails') { %>aria-current="page"<% } %>>Email Notifications</a>
         </nav>
@@ -81,5 +81,22 @@
         </div>
       </div>
     </main>
+    <div
+      class="toast"
+      role="status"
+      x-data="{
+        message: null,
+        init() {
+          try {
+            this.message = sessionStorage.getItem('kwq-toast');
+            sessionStorage.removeItem('kwq-toast');
+          } catch (e) {}
+          if (this.message) setTimeout(() => (this.message = null), 3500);
+        },
+      }"
+      x-show="message"
+      x-text="message"
+      x-cloak
+    ></div>
   </body>
 </html>

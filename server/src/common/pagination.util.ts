@@ -1,5 +1,5 @@
-export interface EmailCursor {
-  createdAt: Date;
+export interface Cursor {
+  date: Date;
   id: string;
 }
 
@@ -23,14 +23,14 @@ export function monthRange(
   };
 }
 
-export function formatCursor({ createdAt, id }: EmailCursor): string {
-  return `${createdAt.getTime()}_${id}`;
+export function formatCursor({ date, id }: Cursor): string {
+  return `${date.getTime()}_${id}`;
 }
 
-export function parseCursor(value: string | undefined): EmailCursor | undefined {
+export function parseCursor(value: string | undefined): Cursor | undefined {
   const match = value ? CURSOR_PATTERN.exec(value) : null;
   if (!match) {
     return undefined;
   }
-  return { createdAt: new Date(Number(match[1])), id: match[2] };
+  return { date: new Date(Number(match[1])), id: match[2] };
 }

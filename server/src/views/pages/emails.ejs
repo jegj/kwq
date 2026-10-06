@@ -1,46 +1,44 @@
 <div class="categories-header">
   <h1>Email Notifications</h1>
-  <form method="get" action="/app/emails" class="emails-filter">
-    <label>
-      Month
-      <input type="month" name="month" value="<%= month ?? '' %>" />
-    </label>
-    <button type="submit">Filter</button>
-    <% if (month) { %>
-    <a href="/app/emails" role="button" class="outline secondary">Clear</a>
-    <% } %>
-  </form>
 </div>
+<form method="get" action="/app/emails" class="emails-filter">
+  <label>
+    Month
+    <input type="month" name="month" value="<%= month ?? '' %>" onchange="this.form.requestSubmit()" />
+  </label>
+  <noscript><button type="submit">Filter</button></noscript>
+  <% if (month) { %>
+  <a href="/app/emails" role="button" class="outline secondary">Clear</a>
+  <% } %>
+</form>
 
 <% if (emails.length === 0) { %>
-<p class="categories-empty">No email notifications<%= month ? ' for this month' : ' yet' %>.</p>
+<p class="categories-empty">No email notifications<%= month ? ' for this month' : ' yet' %>. New bank emails show up here once your watcher forwards them.</p>
 <% } else { %>
-<table>
+<div class="overflow-auto">
+<table class="list-table">
   <thead>
     <tr>
+      <th>Received</th>
+      <th>Message ID</th>
       <th>Parser</th>
       <th>Status</th>
-      <th>Message ID</th>
-      <th>Created</th>
-      <th></th>
+      <th>Source</th>
     </tr>
   </thead>
   <tbody>
     <% emails.forEach((item) => { %>
     <tr class="emails-row" x-data x-on:click="location.href = '/app/emails/<%= item.id %>'">
+      <td data-label="Received"><time datetime="<%= item.createdAt.toISOString() %>"><%= fmt.formatDateTime(item.createdAt) %></time></td>
+      <td data-label="Message ID"><a href="/app/emails/<%= item.id %>" x-on:click.stop><code class="categories-hex"><%= item.messageId %></code></a></td>
       <td data-label="Parser"><%= item.parserName ?? '—' %></td>
-      <td data-label="Status"><%= item.parseStatus %></td>
-      <td data-label="Message ID"><code class="categories-hex"><%= item.messageId %></code></td>
-      <td data-label="Created"><time datetime="<%= item.createdAt.toISOString() %>"><%= item.createdAt.toLocaleString('en-US', { timeZone: 'America/Lima' }) %></time></td>
-      <td class="emails-row-actions">
-        <div class="categories-actions">
-          <a href="/app/emails/<%= item.id %>" role="button" class="outline secondary" x-on:click.stop>View</a>
-        </div>
-      </td>
+      <td data-label="Status"><span class="categories-badge<%= item.parseStatus === 'PARSED' ? ' badge-ok' : item.parseStatus === 'FAILED' ? ' badge-fail' : '' %>"><%= item.parseStatus.charAt(0) + item.parseStatus.slice(1).toLowerCase() %></span></td>
+      <td class="emails-row-actions"><% if (item.transactionId) { %><a href="/app/transactions/<%= item.transactionId %>" x-on:click.stop>Transaction</a><% } %></td>
     </tr>
     <% }) %>
   </tbody>
 </table>
+</div>
 
 <%
   const monthQuery = month ? `&month=${month}` : '';

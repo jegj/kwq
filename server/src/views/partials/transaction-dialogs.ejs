@@ -1,0 +1,221 @@
+<%# Expects a wrapping x-data="transactionForm(redirectAfterDelete)" and `categories` local. %>
+<script>
+  document.addEventListener('alpine:init', () => {
+    // Lima has no DST: fixed UTC-5, matching the month filter.
+    const toLimaInput = (iso) =>
+      new Date(new Date(iso).getTime() - 5 * 3600 * 1000).toISOString().slice(0, 16);
+    const fromLimaInput = (value) => new Date(`${value}:00-05:00`).toISOString();
+    // Shown by the toast in app-layout once the next page loads.
+    const notifyAfterNavigation = (message) => {
+      try {
+        sessionStorage.setItem('kwq-toast', message);
+      } catch (e) {}
+    };
+    const blankForm = () => ({
+      merchant: '',
+      amount: '',
+      currency: 'PEN',
+      transactionDate: toLimaInput(new Date().toISOString()),
+      operationType: '',
+      categoryId: '',
+      description: '',
+      cardLastFour: '',
+      operationNumber: '',
+      operationDescription: '',
+    });
+
+    Alpine.data('transactionForm', (redirectAfterDelete) => ({
+      dialog: null,
+      selected: null,
+      form: blankForm(),
+      submitting: false,
+      error: null,
+      openAdd() {
+        this.selected = null;
+        this.form = blankForm();
+        this.error = null;
+        this.dialog = 'add';
+      },
+      openEdit(transaction) {
+        this.selected = transaction;
+        this.form = {
+          merchant: transaction.merchant,
+          amount: transaction.amount,
+          currency: transaction.currency,
+          transactionDate: toLimaInput(transaction.transactionDate),
+          operationType: transaction.operationType ?? '',
+          categoryId: transaction.categoryId ?? '',
+          description: transaction.description ?? '',
+          cardLastFour: transaction.cardLastFour ?? '',
+          operationNumber: transaction.operationNumber ?? '',
+          operationDescription: transaction.operationDescription ?? '',
+        };
+        this.error = null;
+        this.dialog = 'edit';
+      },
+      openDelete(transaction) {
+        this.selected = transaction;
+        this.error = null;
+        this.dialog = 'delete';
+      },
+      close() {
+        this.dialog = null;
+        this.selected = null;
+      },
+      async send(url, options) {
+        this.submitting = true;
+        this.error = null;
+        try {
+          const response = await fetch(url, options);
+          if (response.status === 400) {
+            this.error = 'Some fields are invalid. Check them and try again.';
+            return false;
+          }
+          if (!response.ok) throw new Error('request failed');
+          return true;
+        } catch (e) {
+          this.error = 'Something went wrong. Try again.';
+          return false;
+        } finally {
+          this.submitting = false;
+        }
+      },
+      async save() {
+        const payload = JSON.stringify({
+          merchant: this.form.merchant,
+          amount: Number(this.form.amount),
+          currency: this.form.currency.toUpperCase(),
+          transactionDate: fromLimaInput(this.form.transactionDate),
+          operationType: this.form.operationType || null,
+          categoryId: this.form.categoryId || null,
+          description: this.form.description || null,
+          cardLastFour: this.form.cardLastFour || null,
+          operationNumber: this.form.operationNumber || null,
+          operationDescription: this.form.operationDescription || null,
+        });
+        const editing = this.dialog === 'edit';
+        const ok = await this.send(
+          editing ? `/app/transactions/${this.selected.id}` : '/app/transactions',
+          {
+            method: editing ? 'PATCH' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+          },
+        );
+        if (!ok) return;
+        notifyAfterNavigation(editing ? 'Transaction saved' : 'Transaction added');
+        location.reload();
+      },
+      async remove() {
+        const ok = await this.send(`/app/transactions/${this.selected.id}`, {
+          method: 'DELETE',
+        });
+        if (!ok) return;
+        notifyAfterNavigation('Transaction deleted');
+        if (redirectAfterDelete) location.href = '/app/transactions';
+        else location.reload();
+      },
+    }));
+  });
+</script>
+
+<dialog x-bind:open="dialog === 'add' || dialog === 'edit'">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" x-on:click="close()"></button>
+      <strong x-text="dialog === 'edit' ? 'Edit transaction' : 'Add transaction'"></strong>
+    </header>
+    <form x-on:submit.prevent="save()">
+      <label>
+        Merchant
+        <input type="text" required maxlength="100" x-model="form.merchant" />
+      </label>
+      <div class="grid">
+        <label>
+          Amount
+          <input type="number" required min="0.01" step="0.01" x-model="form.amount" />
+        </label>
+        <label>
+          Currency
+          <input type="text" required pattern="[A-Za-z]{3}" maxlength="3" x-model="form.currency" />
+        </label>
+      </div>
+      <label>
+        Date (Lima)
+        <input type="datetime-local" required x-model="form.transactionDate" />
+      </label>
+      <div class="grid">
+        <label>
+          Type
+          <select x-model="form.operationType">
+            <option value="">—</option>
+            <option value="DEBIT">Debit</option>
+            <option value="CREDIT">Credit</option>
+            <option value="UNKNOWN">Unknown</option>
+          </select>
+        </label>
+        <label>
+          Category
+          <select x-model="form.categoryId">
+            <option value="">—</option>
+            <% categories.forEach((category) => { %>
+            <option value="<%= category.id %>"><%= category.name %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+      <details x-bind:open="form.description || form.cardLastFour || form.operationNumber || form.operationDescription">
+        <summary>More details</summary>
+        <label>
+          Description
+          <input type="text" maxlength="500" x-model="form.description" />
+        </label>
+        <div class="grid">
+          <label>
+            Card last four
+            <input type="text" pattern="\d{4}" maxlength="4" x-model="form.cardLastFour" />
+          </label>
+          <label>
+            Operation number
+            <input type="text" maxlength="100" x-model="form.operationNumber" />
+          </label>
+        </div>
+        <label>
+          Operation description
+          <input type="text" maxlength="200" x-model="form.operationDescription" />
+        </label>
+      </details>
+      <p class="categories-form-error" role="alert" x-show="error" x-text="error" x-cloak></p>
+      <footer>
+        <button type="button" class="outline secondary" x-on:click="close()">Cancel</button>
+        <button
+          type="submit"
+          x-bind:aria-busy="submitting"
+          x-bind:disabled="submitting"
+          x-text="dialog === 'edit' ? 'Save changes' : 'Add transaction'"
+        ></button>
+      </footer>
+    </form>
+  </article>
+</dialog>
+
+<dialog x-bind:open="dialog === 'delete'">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" x-on:click="close()"></button>
+      <strong>Delete transaction</strong>
+    </header>
+    <p>Remove the transaction at <strong x-text="selected ? selected.merchant : ''"></strong>? This can't be undone.</p>
+    <p class="categories-form-error" role="alert" x-show="error" x-text="error" x-cloak></p>
+    <footer>
+      <button type="button" class="outline secondary" x-on:click="close()">Cancel</button>
+      <button
+        type="button"
+        class="contrast"
+        x-on:click="remove()"
+        x-bind:aria-busy="submitting"
+        x-bind:disabled="submitting"
+      >Delete</button>
+    </footer>
+  </article>
+</dialog>

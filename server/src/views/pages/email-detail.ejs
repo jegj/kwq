@@ -5,10 +5,13 @@
 
 <dl class="emails-meta">
   <dt>From</dt><dd><%= notification.fromAddress %></dd>
-  <dt>Received</dt><dd><%= notification.receivedAt.toLocaleString('en-US', { timeZone: 'America/Lima' }) %></dd>
+  <dt>Received</dt><dd><%= fmt.formatDateTime(notification.receivedAt) %></dd>
   <dt>Status</dt><dd><%= notification.parseStatus %></dd>
   <dt>Parser</dt><dd><%= notification.parserName ?? '—' %></dd>
   <dt>Message ID</dt><dd><code class="categories-hex"><%= notification.messageId %></code></dd>
+  <% if (notification.transactionId) { %>
+  <dt>Transaction</dt><dd><a href="/app/transactions/<%= notification.transactionId %>">View transaction</a></dd>
+  <% } %>
 </dl>
 
 <% if (notification.bodyHtml) { %>

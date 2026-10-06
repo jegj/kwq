@@ -180,9 +180,14 @@ per the stack decision above); JSON endpoints exist only for mutations
 - **App** (session-authed)
   - `GET /` — redirects to `/app/dashboard` if authed, `/auth/login` if not
   - `GET /app/dashboard` — charts/summary
-  - `GET /app/transactions` — list
-  - `GET /app/transactions/:id` — detail + category-override control
-  - `PATCH /app/transactions/:id` — update category
+  - `GET /app/transactions` — list. Same keyset pagination/`month` filter as
+    `/app/emails`, on `(transactionDate DESC, id DESC)`; shared helpers in
+    `server/src/common/pagination.util.ts`. Rows link to their source email.
+  - `GET /app/transactions/:id` — detail (links to source email if any) +
+    edit/delete dialogs
+  - `POST /app/transactions` / `PATCH /app/transactions/:id` /
+    `DELETE /app/transactions/:id` — JSON; `PATCH` takes the full body and sets
+    `isManuallyCategorized` only when `categoryId` changed
   - `GET /app/categories` — single management page: list + inline
     create/edit/delete
   - `POST /app/categories` / `PATCH /app/categories/:id` /
@@ -192,7 +197,8 @@ per the stack decision above); JSON endpoints exist only for mutations
     `?after=<cursor>` (newer), cursor = `<createdAtMs>_<id>`. Optional
     `?month=YYYY-MM` filter, boundaries in America/Lima (fixed UTC-5).
   - `GET /app/emails/:id` — metadata + sandboxed-iframe preview of `bodyHtml`
-    (falls back to plain `body`); 404 for other users' emails
+    (falls back to plain `body`); 404 for other users' emails; links to its
+    transaction if parsed
 - **Admin** (role-guarded, nested under `/app`)
   - `GET /app/admin/users` — single management page: list + inline
     create/edit/delete
