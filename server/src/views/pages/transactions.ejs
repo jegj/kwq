@@ -13,9 +13,6 @@
     <a href="/app/transactions" role="button" class="outline secondary">Clear</a>
     <% } %>
   </form>
-  <% if (month && monthTotals.length > 0) { %>
-  <p class="month-total">Spent this month: <strong><%= monthTotals.map((entry) => fmt.formatMoney(entry.total, entry.currency)).join(' + ') %></strong></p>
-  <% } %>
 
   <% if (transactions.length === 0) { %>
   <p class="categories-empty">No transactions<%= month ? ' for this month' : ' yet' %>. Add one, or wait for the next bank email.</p>

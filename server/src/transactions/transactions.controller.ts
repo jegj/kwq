@@ -121,7 +121,6 @@ export class TransactionsController {
       })),
       categories: await this.loadCategories(request.user?.id),
       month: month ? query.month : null,
-      monthTotals: await this.loadMonthTotals(request.user?.id, month),
       olderCursor: hasOlder ? cursorOf(last) : null,
       newerCursor: hasNewer ? cursorOf(first) : null,
     };
@@ -224,25 +223,6 @@ export class TransactionsController {
       operationType: body.operationType ?? null,
       categoryId: body.categoryId ?? null,
     };
-  }
-
-  // Debits only: the total answers "how much did I spend this month".
-  private async loadMonthTotals(
-    userId: string | undefined,
-    month: { gte: Date; lt: Date } | undefined,
-  ) {
-    if (!month) {
-      return [];
-    }
-    const groups = await this.prisma.transaction.groupBy({
-      by: ['currency'],
-      where: { userId, operationType: 'DEBIT', transactionDate: month },
-      _sum: { amount: true },
-    });
-    return groups.map((group) => ({
-      currency: group.currency,
-      total: String(group._sum.amount),
-    }));
   }
 
   private loadCategories(userId: string | undefined) {

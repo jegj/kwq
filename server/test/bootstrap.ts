@@ -10,6 +10,7 @@ import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import ejs from 'ejs';
 import { AppModule } from '../src/app.module.js';
 import { RedirectExceptionFilter } from '../src/auth/redirect/redirect.exception.js';
+import { NotFoundExceptionFilter } from '../src/common/not-found.filter.js';
 
 export async function createTestApp(
   configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
@@ -24,7 +25,10 @@ export async function createTestApp(
   const app = moduleFixture.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter(),
   );
-  app.useGlobalFilters(new RedirectExceptionFilter());
+  app.useGlobalFilters(
+    new RedirectExceptionFilter(),
+    new NotFoundExceptionFilter(),
+  );
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   await app.register(fastifyView, {
     engine: { ejs },

@@ -19,7 +19,10 @@ describe('AuthController', () => {
       const controller = new AuthController(authService as any);
       const reply = fakeReply();
 
-      await controller.login({ email: 'javier@example.com', password: 'wrong' }, reply);
+      await controller.login(
+        { email: 'javier@example.com', password: 'wrong' },
+        reply,
+      );
 
       expect(reply.status).toHaveBeenCalledWith(401);
       expect(reply.view).toHaveBeenCalledWith(

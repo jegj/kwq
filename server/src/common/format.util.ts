@@ -1,8 +1,9 @@
 export function formatMoney(amount: string | number, currency: string): string {
   try {
-    return new Intl.NumberFormat('es-PE', { style: 'currency', currency }).format(
-      Number(amount),
-    );
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency,
+    }).format(Number(amount));
   } catch {
     // ponytail: unknown ISO code, show the raw value rather than failing the page.
     return `${amount} ${currency}`;
@@ -28,5 +29,7 @@ export function titleCase(text: string): string {
   if (text !== text.toUpperCase()) {
     return text;
   }
-  return text.toLowerCase().replace(/(^|\s)\S/g, (match) => match.toUpperCase());
+  return text
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, (match) => match.toUpperCase());
 }

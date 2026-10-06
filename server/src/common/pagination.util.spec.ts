@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  formatCursor,
-  monthRange,
-  parseCursor,
-} from './pagination.util.js';
+import { formatCursor, monthRange, parseCursor } from './pagination.util.js';
 
 const ID = '0192a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b';
 

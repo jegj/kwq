@@ -83,7 +83,9 @@ export class EmailsController {
     const last = emails[emails.length - 1];
 
     const hasOlder = after ? last !== undefined : hasMore;
-    const hasNewer = after ? hasMore : before !== undefined && first !== undefined;
+    const hasNewer = after
+      ? hasMore
+      : before !== undefined && first !== undefined;
 
     return {
       title: 'Email Notifications',
@@ -93,8 +95,12 @@ export class EmailsController {
       currentPath: CURRENT_PATH,
       emails,
       month: month ? query.month : null,
-      olderCursor: hasOlder ? formatCursor({ date: last.createdAt, id: last.id }) : null,
-      newerCursor: hasNewer ? formatCursor({ date: first.createdAt, id: first.id }) : null,
+      olderCursor: hasOlder
+        ? formatCursor({ date: last.createdAt, id: last.id })
+        : null,
+      newerCursor: hasNewer
+        ? formatCursor({ date: first.createdAt, id: first.id })
+        : null,
     };
   }
 

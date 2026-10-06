@@ -46,7 +46,6 @@ function controllerWith(rows: unknown[] = []) {
       create: vi.fn().mockResolvedValue({ id: UUID(1) }),
       update: vi.fn().mockResolvedValue({}),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
-      groupBy: vi.fn().mockResolvedValue([]),
     },
     category: {
       findMany: vi.fn().mockResolvedValue([]),
@@ -109,7 +108,10 @@ describe('TransactionsController', () => {
             userId: 'user-1',
             OR: [
               { transactionDate: { lt: cursor.transactionDate } },
-              { transactionDate: cursor.transactionDate, id: { lt: cursor.id } },
+              {
+                transactionDate: cursor.transactionDate,
+                id: { lt: cursor.id },
+              },
             ],
           },
         }),
@@ -160,46 +162,6 @@ describe('TransactionsController', () => {
         }),
       );
       expect(result.month).toBe('2026-09');
-    });
-
-    it('totals the month’s debits per currency when a month is selected', async () => {
-      const { prisma, controller } = controllerWith();
-      prisma.transaction.groupBy.mockResolvedValue([
-        { currency: 'PEN', _sum: { amount: '1240.5' } },
-      ]);
-
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { month: '2026-09' },
-      );
-
-      expect(prisma.transaction.groupBy).toHaveBeenCalledWith({
-        by: ['currency'],
-        where: {
-          userId: 'user-1',
-          operationType: 'DEBIT',
-          transactionDate: {
-            gte: new Date('2026-09-01T05:00:00.000Z'),
-            lt: new Date('2026-10-01T05:00:00.000Z'),
-          },
-        },
-        _sum: { amount: true },
-      });
-      expect(result.monthTotals).toEqual([
-        { currency: 'PEN', total: '1240.5' },
-      ]);
-    });
-
-    it('skips the totals query without a month', async () => {
-      const { prisma, controller } = controllerWith();
-
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        {},
-      );
-
-      expect(prisma.transaction.groupBy).not.toHaveBeenCalled();
-      expect(result.monthTotals).toEqual([]);
     });
 
     it('ignores a malformed cursor and an invalid month', async () => {
@@ -323,11 +285,10 @@ describe('TransactionsController', () => {
       const { prisma, controller } = controllerWith();
       prisma.transaction.findFirst.mockResolvedValue({ categoryId: null });
 
-      await controller.updateTransaction(
-        requestWithUser('user-1'),
-        UUID(1),
-        { ...validBody, categoryId: UUID(9) },
-      );
+      await controller.updateTransaction(requestWithUser('user-1'), UUID(1), {
+        ...validBody,
+        categoryId: UUID(9),
+      });
       expect(prisma.transaction.update).toHaveBeenLastCalledWith(
         expect.objectContaining({
           where: { id: UUID(1) },
@@ -339,11 +300,10 @@ describe('TransactionsController', () => {
       );
 
       prisma.transaction.findFirst.mockResolvedValue({ categoryId: UUID(9) });
-      await controller.updateTransaction(
-        requestWithUser('user-1'),
-        UUID(1),
-        { ...validBody, categoryId: UUID(9) },
-      );
+      await controller.updateTransaction(requestWithUser('user-1'), UUID(1), {
+        ...validBody,
+        categoryId: UUID(9),
+      });
       const { data } = prisma.transaction.update.mock.calls[1][0];
       expect(data.isManuallyCategorized).toBeUndefined();
     });
@@ -352,11 +312,10 @@ describe('TransactionsController', () => {
       const { prisma, controller } = controllerWith();
       prisma.transaction.findFirst.mockResolvedValue({ categoryId: UUID(9) });
 
-      await controller.updateTransaction(
-        requestWithUser('user-1'),
-        UUID(1),
-        { ...validBody, categoryId: null },
-      );
+      await controller.updateTransaction(requestWithUser('user-1'), UUID(1), {
+        ...validBody,
+        categoryId: null,
+      });
 
       expect(prisma.category.findFirst).not.toHaveBeenCalled();
       expect(prisma.transaction.update).toHaveBeenCalledWith(

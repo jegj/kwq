@@ -9,9 +9,14 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import ejs from 'ejs';
-import { formatDateTime, formatMoney, titleCase } from './common/format.util.js';
+import {
+  formatDateTime,
+  formatMoney,
+  titleCase,
+} from './common/format.util.js';
 import { Logger } from 'nestjs-pino';
 import { AppModule, ObserveInstrument } from './app.module.js';
+import { NotFoundExceptionFilter } from './common/not-found.filter.js';
 import { RedirectExceptionFilter } from './auth/redirect/redirect.exception.js';
 
 async function bootstrap() {
@@ -24,7 +29,10 @@ async function bootstrap() {
     },
   );
   app.useLogger(app.get(Logger));
-  app.useGlobalFilters(new RedirectExceptionFilter());
+  app.useGlobalFilters(
+    new RedirectExceptionFilter(),
+    new NotFoundExceptionFilter(),
+  );
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   await app.register(fastifyView, {
