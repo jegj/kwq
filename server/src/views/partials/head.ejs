@@ -231,8 +231,8 @@
         font-variant-numeric: tabular-nums;
       }
 
-      .amount-credit {
-        color: var(--pico-ins-color);
+      .amount-negative {
+        color: var(--pico-del-color);
       }
 
       .categories-badge.badge-ok {
@@ -337,6 +337,29 @@
         background: none;
         padding: 0;
         color: var(--pico-muted-color);
+      }
+
+      .parser-chip {
+        --parser-hue: 210;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.1rem 0.6rem 0.1rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: hsl(var(--parser-hue) 80% 78%);
+        background: hsl(var(--parser-hue) 55% 40% / 0.18);
+        border: 1px solid hsl(var(--parser-hue) 55% 55% / 0.45);
+      }
+
+      .parser-chip::before {
+        content: '';
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 50%;
+        background: hsl(var(--parser-hue) 80% 65%);
       }
 
       .categories-badge {

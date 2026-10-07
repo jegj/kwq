@@ -48,7 +48,7 @@ const transactionSelect = {
   transactionDate: true,
   categoryId: true,
   category: { select: { name: true, icon: true, color: true } },
-  email: { select: { id: true } },
+  email: { select: { id: true, parserName: true } },
 } satisfies Prisma.TransactionSelect;
 
 @Controller('app/transactions')
@@ -229,7 +229,7 @@ export class TransactionsController {
     return this.prisma.category.findMany({
       where: { OR: [{ userId: null }, { userId }] },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true },
+      select: { id: true, name: true, icon: true },
     });
   }
 

@@ -159,7 +159,7 @@
           <select x-model="form.categoryId">
             <option value="">—</option>
             <% categories.forEach((category) => { %>
-            <option value="<%= category.id %>"><%= category.name %></option>
+            <option value="<%= category.id %>"><%= category.icon ? category.icon + ' ' : '' %><%= category.name %></option>
             <% }) %>
           </select>
         </label>

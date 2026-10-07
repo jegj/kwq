@@ -25,6 +25,7 @@
         <th>Merchant</th>
         <th>Category</th>
         <th class="amount">Amount</th>
+        <th>Parser</th>
         <th>Source</th>
       </tr>
     </thead>
@@ -41,7 +42,8 @@
           </span>
           <% } else { %><span class="categories-badge">Uncategorized</span><% } %>
         </td>
-        <td data-label="Amount" class="amount<%= item.operationType === 'CREDIT' ? ' amount-credit' : '' %>"><%= item.operationType === 'CREDIT' ? '+' : '' %><%= fmt.formatMoney(item.amount, item.currency) %></td>
+        <td data-label="Amount" class="amount amount-negative">-<%= fmt.formatMoney(Math.abs(Number(item.amount)), item.currency) %></td>
+        <td data-label="Parser"><% if (item.email?.parserName) { %><span class="parser-chip" style="--parser-hue: <%= [...item.email.parserName].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7) %>"><%= item.email.parserName %></span><% } else { %>—<% } %></td>
         <td class="emails-row-actions"><% if (item.email) { %><a href="/app/emails/<%= item.email.id %>" x-on:click.stop>Email</a><% } %></td>
       </tr>
       <% }) %>
