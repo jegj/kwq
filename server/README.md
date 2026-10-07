@@ -8,7 +8,6 @@ them, classifies expenses, and displays them.
 - **Backend**: NestJS
 - **Database**: PostgreSQL + Prisma
 - **Views**: server-rendered (Nest + template engine), Alpine.js, Chart.js
-- **Hosting**: Railway
 
 ## Overview
 

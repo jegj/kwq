@@ -16,7 +16,6 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
 - **Database**: PostgreSQL + Prisma ORM.
 - **Views**: server-rendered (Nest + template engine), Alpine.js for
   interactivity, Chart.js for charts.
-- **Hosting**: Railway (managed Postgres + git-push deploys).
 
 ## Email ingestion & parsing
 
@@ -53,7 +52,7 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   `postgres` service, port `5432`, named volume (`kwq_postgres_data`) for
   persistence. Started with `npm run db:up` from repo root.
   - Pinned to PG18 (not 17) specifically for native `uuidv7()`/`uuidv4()`
-    support — Railway also has a PG18 template, so dev/prod match.
+    support.
   - Creds via `server/.env` (gitignored; `server/.env.example` committed):
     `POSTGRES_USER=kwq`, `POSTGRES_PASSWORD=kwq`, `POSTGRES_DB=kwq_dev`.
 - **npm workspaces**: root `package.json` has
@@ -81,12 +80,12 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   `pino-pretty` as a dev dependency only.
   - `LoggerModule.forRoot()` in `AppModule`: `pino-pretty` transport (colored,
     single-line) when `APP_ENV !== 'production'`; raw structured JSON
-    otherwise, for Railway/log aggregators. Level from `LOG_LEVEL` env var,
+    otherwise, for log aggregators. Level from `LOG_LEVEL` env var,
     defaulting to `debug` in dev / `info` in prod.
   - `main.ts` calls `app.useLogger(app.get(Logger))` with `bufferLogs: true`
     so Nest's own bootstrap logs go through pino too, not just app logs.
 - **`NODE_ENV` vs `APP_ENV`**: `NODE_ENV` is always `production` in every
-  environment (local, staging, Railway) — nested packages (Nest, Fastify,
+  environment (local, staging, prod) — nested packages (Nest, Fastify,
   etc.) get their production-optimized codepaths, no dev-mode overhead. A
   separate `APP_ENV` (`development` / `staging` / `production`) drives all
   app-specific lower-environment logic (currently just the pino-pretty
@@ -219,4 +218,4 @@ filtering on lists for v1 (exception: `/app/emails` cursor + `month`).
 - Invite-link UX details (expiry, password policy) for the CLI/seed script
   path — the web admin creation flow is now decided (see URL design above).
 - Webhook endpoint hardening (rate limiting, payload size limits) — not
-  discussed, default to sane Nest/Railway conventions unless revisited.
+  discussed, default to sane Nest conventions unless revisited.
