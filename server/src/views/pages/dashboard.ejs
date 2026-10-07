@@ -1,19 +1,145 @@
-<h1>Dashboard</h1>
+<style>
+  .dash-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
+  .dash-head h1 { margin-bottom: 0; }
+  .dash-badge { font-size: 0.75rem; padding: 0.15rem 0.6rem; border-radius: 999px; border: 1px solid var(--pico-muted-border-color); color: var(--pico-muted-color); }
+  .dash-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .dash-stat { margin: 0; padding: 1rem 1.25rem; }
+  .dash-stat small { display: block; color: var(--pico-muted-color); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; }
+  .dash-stat strong { display: block; font-size: 1.6rem; line-height: 1.3; font-variant-numeric: tabular-nums; }
+  .dash-delta { font-size: 0.8rem; }
+  .dash-up { color: #e08a83; }
+  .dash-down { color: #6fcf97; }
+  .dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+  .dash-grid article { margin: 0; }
+  .dash-grid h2 { font-size: 1rem; margin-bottom: 1rem; color: var(--pico-muted-color); font-weight: 500; }
+  .dash-chart { position: relative; height: 15rem; }
+  .dash-list { list-style: none; margin: 0; padding: 0; }
+  .dash-list li { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--pico-muted-border-color); }
+  .dash-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .dash-dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex: none; }
+  .dash-merchant { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dash-amount { font-variant-numeric: tabular-nums; }
+  .dash-recent { margin-top: 1rem; }
+  .dash-grid > *, .dash-stats > * { min-width: 0; }
+  @media (max-width: 768px) { .dash-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) {
+    .dash-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .dash-stat { padding: 0.75rem 1rem; }
+    .dash-stat strong { font-size: 1.2rem; overflow-wrap: anywhere; }
+    .dash-grid article, .dash-recent { padding: 1rem; }
+    .dash-chart { height: 12rem; }
+  }
+</style>
 
-<article
-  style="
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    text-align: center;
-    min-height: 40vh;
-  "
+<!-- ponytail: sample data for design preview; swap `data` for controller locals once the dashboard query exists -->
+<div
+  x-data="{
+    data: {
+      month: 'October 2026',
+      total: 3482.5,
+      count: 47,
+      avg: 74.1,
+      delta: -6.2,
+      daily: [40, 85, 20, 130, 60, 210, 35, 90, 55, 175, 45, 120, 70, 95],
+      categories: [
+        { name: 'Food', amount: 1120, color: '#e08a83' },
+        { name: 'Transport', amount: 640, color: '#7aa2f7' },
+        { name: 'Shopping', amount: 920, color: '#e0af68' },
+        { name: 'Services', amount: 802.5, color: '#73daca' },
+      ],
+      recent: [
+        { merchant: 'Wong Supermarket', category: 'Food', color: '#e08a83', amount: 182.4, date: 'Oct 6' },
+        { merchant: 'Uber', category: 'Transport', color: '#7aa2f7', amount: 24.9, date: 'Oct 5' },
+        { merchant: 'Falabella', category: 'Shopping', color: '#e0af68', amount: 349.0, date: 'Oct 4' },
+        { merchant: 'Claro', category: 'Services', color: '#73daca', amount: 89.0, date: 'Oct 3' },
+      ],
+    },
+    money(value) { return 'S/ ' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+    init() {
+      const muted = '#8b95a7';
+      new Chart(this.$refs.trend, {
+        type: 'line',
+        data: {
+          labels: this.data.daily.map((_, index) => index + 1),
+          datasets: [{ data: this.data.daily, borderColor: '#e08a83', backgroundColor: 'rgba(224,138,131,0.12)', fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 }],
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: muted } },
+            y: { grid: { color: 'rgba(139,149,167,0.15)' }, ticks: { color: muted }, border: { display: false } },
+          },
+        },
+      });
+      new Chart(this.$refs.split, {
+        type: 'doughnut',
+        data: {
+          labels: this.data.categories.map((category) => category.name),
+          datasets: [{ data: this.data.categories.map((category) => category.amount), backgroundColor: this.data.categories.map((category) => category.color), borderWidth: 0 }],
+        },
+        options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } },
+      });
+    },
+  }"
 >
-  <p style="margin-bottom: 0;">No transactions yet.</p>
-  <p style="margin-top: 0; color: var(--pico-muted-color);">
-    Once your forwarded emails start coming in, your spending will show up
-    here.
-  </p>
-</article>
+  <div class="dash-head">
+    <h1>Dashboard</h1>
+    <span class="dash-badge" x-text="data.month + ' · sample data'"></span>
+  </div>
+
+  <section class="dash-stats" aria-label="Summary">
+    <article class="dash-stat">
+      <small>Spent</small>
+      <strong x-text="money(data.total)"></strong>
+      <span class="dash-delta" :class="data.delta > 0 ? 'dash-up' : 'dash-down'" x-text="(data.delta > 0 ? '▲ ' : '▼ ') + Math.abs(data.delta) + '% vs last month'"></span>
+    </article>
+    <article class="dash-stat">
+      <small>Transactions</small>
+      <strong x-text="data.count"></strong>
+    </article>
+    <article class="dash-stat">
+      <small>Average</small>
+      <strong x-text="money(data.avg)"></strong>
+    </article>
+    <article class="dash-stat">
+      <small>Top category</small>
+      <strong x-text="data.categories[0].name"></strong>
+    </article>
+  </section>
+
+  <section class="dash-grid">
+    <article>
+      <h2>Daily spending</h2>
+      <div class="dash-chart"><canvas x-ref="trend" role="img" aria-label="Daily spending line chart"></canvas></div>
+    </article>
+    <article>
+      <h2>By category</h2>
+      <div class="dash-chart" style="height: 9rem;"><canvas x-ref="split" role="img" aria-label="Spending by category chart"></canvas></div>
+      <ul class="dash-list" style="margin-top: 1rem;">
+        <template x-for="category in data.categories" :key="category.name">
+          <li>
+            <span class="dash-dot" :style="'background:' + category.color"></span>
+            <span class="dash-merchant" x-text="category.name"></span>
+            <span class="dash-amount" x-text="money(category.amount)"></span>
+          </li>
+        </template>
+      </ul>
+    </article>
+  </section>
+
+  <article class="dash-recent">
+    <h2 style="font-size: 1rem; color: var(--pico-muted-color); font-weight: 500;">Recent transactions</h2>
+    <ul class="dash-list">
+      <template x-for="item in data.recent" :key="item.merchant + item.date">
+        <li>
+          <span class="dash-dot" :style="'background:' + item.color"></span>
+          <span class="dash-merchant"><span x-text="item.merchant"></span> <small style="color: var(--pico-muted-color);" x-text="'· ' + item.category + ' · ' + item.date"></small></span>
+          <span class="dash-amount" x-text="money(item.amount)"></span>
+        </li>
+      </template>
+    </ul>
+  </article>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
