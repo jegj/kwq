@@ -1,5 +1,5 @@
 import type { FastifyReply } from 'fastify';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthController } from './auth.controller.js';
 
 function fakeReply(): FastifyReply {
@@ -33,6 +33,41 @@ describe('AuthController', () => {
         }),
       );
       expect(reply.redirect).not.toHaveBeenCalled();
+    });
+
+    describe('session cookie', () => {
+      const originalAppEnv = process.env.APP_ENV;
+      afterEach(() => {
+        process.env.APP_ENV = originalAppEnv;
+      });
+
+      async function loginCookieOptions() {
+        const authService = {
+          validateUser: vi
+            .fn()
+            .mockResolvedValue({ id: 'u1', role: 'USER', email: 'a@b.co' }),
+          recordLogin: vi.fn(),
+        };
+        const reply = fakeReply();
+        await new AuthController(authService as any).login(
+          { email: 'a@b.co', password: 'pw' },
+          reply,
+        );
+        return (reply.setCookie as any).mock.calls[0][2];
+      }
+
+      it('is Secure outside development and lasts 7 days', async () => {
+        process.env.APP_ENV = 'production';
+        expect(await loginCookieOptions()).toMatchObject({
+          secure: true,
+          maxAge: 7 * 24 * 60 * 60,
+        });
+      });
+
+      it('is not Secure in development so http://localhost works', async () => {
+        process.env.APP_ENV = 'development';
+        expect(await loginCookieOptions()).toMatchObject({ secure: false });
+      });
     });
   });
 });

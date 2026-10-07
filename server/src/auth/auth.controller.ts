@@ -16,6 +16,7 @@ import { GuestGuard } from './guard/guest.guard.js';
 import { signAuthToken, verifyAuthToken } from './util/jwt.util.js';
 
 const SESSION_COOKIE = 'session';
+const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // matches the JWT's 7d expiry
 
 @Controller('auth')
 export class AuthController {
@@ -50,6 +51,8 @@ export class AuthController {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
+      secure: process.env.APP_ENV !== 'development',
+      maxAge: SESSION_MAX_AGE_SECONDS,
     });
     reply.status(HttpStatus.FOUND).redirect('/app/dashboard');
   }

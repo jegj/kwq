@@ -19,7 +19,6 @@ export class WebhookTokenGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    console.log('--->', hashWebhookToken(token));
     const user = await this.prisma.user.findUnique({
       where: { webhookToken: hashWebhookToken(token) },
     });
