@@ -184,7 +184,7 @@ describe('DashboardService.getSummaries categories', () => {
   });
 });
 
-describe('DashboardService.getSummaries pace', () => {
+describe('DashboardService.getSummaries daily', () => {
   const userId = 'user-1';
 
   function serviceWith(amountsByMonth: Record<string, any[]>) {
@@ -210,7 +210,7 @@ describe('DashboardService.getSummaries pace', () => {
     date: new Date(iso),
   });
 
-  it('accumulates spend per Lima day and stops at today for the current month', async () => {
+  it('sums spend per Lima day across the whole month, future days included', async () => {
     const [summary] = await serviceWith({
       '2026-10': [
         // 03:00 UTC is still the previous day in Lima, so this lands on Oct 1
@@ -219,36 +219,19 @@ describe('DashboardService.getSummaries pace', () => {
         amount('2026-10-05T15:00:00Z', 30),
         amount('2026-10-03T15:00:00Z', 999, 'USD'),
       ],
-    }).getSummaries(userId, '2026-10', now);
+    }).getSummaries(userId, '2026-10');
 
-    expect(summary.pace.current).toEqual([20, 120, 120, 120, 150, 150, 150]);
+    expect(summary.daily).toHaveLength(31);
+    expect(summary.daily.slice(0, 6)).toEqual([20, 100, 0, 0, 30, 0]);
   });
 
-  it('covers the whole month when it is a past one', async () => {
+  it('uses the real length of shorter months', async () => {
     const [summary] = await serviceWith({
       '2026-09': [amount('2026-09-03T15:00:00Z', 10)],
-    }).getSummaries(userId, '2026-09', now);
+    }).getSummaries(userId, '2026-09');
 
-    expect(summary.pace.current).toHaveLength(30);
-    expect(summary.pace.current[29]).toBe(10);
-  });
-
-  it('adds the previous month cumulative series, trimmed to the shorter month', async () => {
-    const [summary] = await serviceWith({
-      '2026-10': [amount('2026-10-02T15:00:00Z', 20)],
-      '2026-09': [amount('2026-09-03T15:00:00Z', 10)],
-    }).getSummaries(userId, '2026-10', now);
-
-    expect(summary.pace.previous).toHaveLength(30);
-    expect(summary.pace.previous.slice(0, 4)).toEqual([0, 0, 10, 10]);
-  });
-
-  it('leaves the previous series empty when there was no spend', async () => {
-    const [summary] = await serviceWith({
-      '2026-10': [amount('2026-10-02T15:00:00Z', 20)],
-    }).getSummaries(userId, '2026-10', now);
-
-    expect(summary.pace.previous).toEqual([]);
+    expect(summary.daily).toHaveLength(30);
+    expect(summary.daily[2]).toBe(10);
   });
 });
 
@@ -289,7 +272,7 @@ describe('DashboardService.getSummaries lists', () => {
     const [pen] = await serviceWith([
       ...rows,
       row(7, { currency: 'USD' }),
-    ]).getSummaries(userId, '2026-10', now);
+    ]).getSummaries(userId, '2026-10');
 
     expect(pen.recent.map((item) => item.id)).toEqual([
       'id-6',
@@ -304,7 +287,7 @@ describe('DashboardService.getSummaries lists', () => {
     const rows = [5, 90, 20, 70, 10, 60, 30].map((amount, index) =>
       row(index + 1, { amount }),
     );
-    const [pen] = await serviceWith(rows).getSummaries(userId, '2026-10', now);
+    const [pen] = await serviceWith(rows).getSummaries(userId, '2026-10');
 
     expect(pen.biggest.map((item) => item.amount)).toEqual([
       90, 70, 60, 30, 20,
@@ -315,7 +298,7 @@ describe('DashboardService.getSummaries lists', () => {
     const [pen] = await serviceWith(
       [row(3, { categoryName: 'Food', amount: 24.9 })],
       [{ currency: 'PEN', name: 'Food', color: '#222222', total: 24.9 }],
-    ).getSummaries(userId, '2026-10', now);
+    ).getSummaries(userId, '2026-10');
 
     expect(pen.recent[0]).toEqual({
       id: 'id-3',
@@ -328,11 +311,7 @@ describe('DashboardService.getSummaries lists', () => {
   });
 
   it('shows Uncategorized in muted gray for a transaction without category', async () => {
-    const [pen] = await serviceWith([row(3)]).getSummaries(
-      userId,
-      '2026-10',
-      now,
-    );
+    const [pen] = await serviceWith([row(3)]).getSummaries(userId, '2026-10');
 
     expect(pen.recent[0].categoryName).toBeNull();
     expect(pen.recent[0].color).toBe('#8b95a7');
@@ -343,7 +322,7 @@ describe('DashboardService.getSummaries lists', () => {
       row(1, { merchant: 'Uber', amount: 10 }),
       row(2, { merchant: 'Wong', amount: 50 }),
       row(3, { merchant: 'Uber', amount: 15 }),
-    ]).getSummaries(userId, '2026-10', now);
+    ]).getSummaries(userId, '2026-10');
 
     expect(pen.topMerchants).toEqual([
       { merchant: 'Wong', amount: 50, count: 1 },
@@ -353,7 +332,7 @@ describe('DashboardService.getSummaries lists', () => {
 
   it('caps top merchants at 5', async () => {
     const rows = [1, 2, 3, 4, 5, 6].map((id) => row(id, { amount: id }));
-    const [pen] = await serviceWith(rows).getSummaries(userId, '2026-10', now);
+    const [pen] = await serviceWith(rows).getSummaries(userId, '2026-10');
 
     expect(pen.topMerchants).toHaveLength(5);
   });
@@ -364,7 +343,7 @@ describe('DashboardService.getSummaries lists', () => {
       row(2, { categoryName: 'Food' }),
       row(3),
       row(4, { currency: 'USD', categoryName: 'Food' }),
-    ]).getSummaries(userId, '2026-10', now);
+    ]).getSummaries(userId, '2026-10');
 
     expect(pen.uncategorized).toBe(2);
     expect(usd.uncategorized).toBe(0);

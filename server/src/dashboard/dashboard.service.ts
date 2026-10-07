@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { monthRange } from '../common/pagination.util.js';
 import {
-  type TransactionRow,
   DashboardRepository,
+  type TransactionRow,
 } from './dashboard.repository.js';
 
 export interface MonthNav {
@@ -41,7 +41,7 @@ export interface CurrencySummary {
   delta: number | null;
   categories: CategorySlice[];
   topCategory: string | null;
-  pace: { current: number[]; previous: number[] };
+  daily: number[];
   recent: TransactionItem[];
   biggest: TransactionItem[];
   topMerchants: MerchantTotal[];
@@ -86,8 +86,8 @@ function daysInMonth(month: string): number {
   return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
 }
 
-// Running total of spend per Lima day, `length` days long.
-function cumulative(
+// Spend per Lima day, `length` days long.
+function dailyTotals(
   rows: TransactionRow[],
   currency: string,
   length: number,
@@ -98,8 +98,7 @@ function cumulative(
     const day = new Date(row.date.getTime() - LIMA_UTC_OFFSET_MS).getUTCDate();
     perDay[day - 1] += row.amount;
   }
-  let running = 0;
-  return perDay.map((value) => Math.round((running += value) * 100) / 100);
+  return perDay.map((value) => Math.round(value * 100) / 100);
 }
 
 function topMerchants(rows: TransactionRow[]): MerchantTotal[] {
@@ -148,28 +147,18 @@ export class DashboardService {
   async getSummaries(
     userId: string,
     month: string,
-    now = new Date(),
   ): Promise<CurrencySummary[]> {
     const [year, monthNumber] = month.split('-').map(Number);
     const previousMonth = formatMonth(year, monthNumber - 2);
-    const [current, previous, categoryRows, currentAmounts, previousAmounts] =
-      await Promise.all([
+    const [current, previous, categoryRows, currentAmounts] = await Promise.all(
+      [
         this.repository.totalsByCurrency(userId, monthRange(month)!),
         this.repository.totalsByCurrency(userId, monthRange(previousMonth)!),
         this.repository.totalsByCategory(userId, monthRange(month)!),
         this.repository.transactionsInRange(userId, monthRange(month)!),
-        this.repository.transactionsInRange(userId, monthRange(previousMonth)!),
-      ]);
-
-    const elapsedDays =
-      month === currentMonth(now)
-        ? new Date(now.getTime() - LIMA_UTC_OFFSET_MS).getUTCDate()
-        : daysInMonth(month);
-    // The previous series is trimmed so both lines share the same x axis.
-    const previousDays = Math.min(
-      daysInMonth(previousMonth),
-      daysInMonth(month),
+      ],
     );
+
     const previousTotals = new Map(
       previous.map((row) => [row.currency, row.total]),
     );
@@ -215,12 +204,7 @@ export class DashboardService {
           topCategory:
             categories.find((category) => category.name !== UNCATEGORIZED)
               ?.name ?? null,
-          pace: {
-            current: cumulative(currentAmounts, currency, elapsedDays),
-            previous: previousAmounts.some((row) => row.currency === currency)
-              ? cumulative(previousAmounts, currency, previousDays)
-              : [],
-          },
+          daily: dailyTotals(currentAmounts, currency, daysInMonth(month)),
           recent: [...rows]
             .sort(
               (first, second) => second.date.getTime() - first.date.getTime(),

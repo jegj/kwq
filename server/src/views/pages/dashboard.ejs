@@ -50,17 +50,11 @@
     init() {
       const muted = '#8b95a7';
       const trend = new Chart(this.$refs.trend, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            { label: 'This month', data: [], borderColor: '#e08a83', backgroundColor: 'rgba(224,138,131,0.12)', fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 },
-            { label: 'Last month', data: [], borderColor: muted, borderDash: [5, 4], tension: 0.35, pointRadius: 0, borderWidth: 1.5 },
-          ],
-        },
+        type: 'bar',
+        data: { labels: [], datasets: [{ data: [], backgroundColor: '#e08a83', borderRadius: 3 }] },
         options: {
           maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: muted, boxWidth: 12 } } },
+          plugins: { legend: { display: false } },
           scales: {
             x: { grid: { display: false }, ticks: { color: muted } },
             y: { grid: { color: 'rgba(139,149,167,0.15)' }, ticks: { color: muted }, border: { display: false } },
@@ -68,12 +62,9 @@
         },
       });
       const renderTrend = () => {
-        const pace = this.summary ? this.summary.pace : { current: [], previous: [] };
-        const days = Math.max(pace.current.length, pace.previous.length);
-        trend.data.labels = Array.from({ length: days }, (_, index) => index + 1);
-        trend.data.datasets[0].data = pace.current;
-        trend.data.datasets[1].data = pace.previous;
-        trend.data.datasets[1].hidden = !pace.previous.length;
+        const daily = this.summary ? this.summary.daily : [];
+        trend.data.labels = daily.map((_, index) => index + 1);
+        trend.data.datasets[0].data = daily;
         trend.update();
       };
       renderTrend();
@@ -143,8 +134,8 @@
 
   <section class="dash-grid" x-show="summary">
     <article>
-      <h2>Spending pace (cumulative)</h2>
-      <div class="dash-chart"><canvas x-ref="trend" role="img" aria-label="Cumulative spending by day, compared with last month"></canvas></div>
+      <h2>Daily spending</h2>
+      <div class="dash-chart"><canvas x-ref="trend" role="img" aria-label="Daily spending bar chart"></canvas></div>
     </article>
     <article>
       <h2>By category</h2>
