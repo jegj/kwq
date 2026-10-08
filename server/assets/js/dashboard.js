@@ -66,7 +66,9 @@ document.addEventListener('alpine:init', () => {
       const renderSplit = () => {
         const categories = this.summary ? this.summary.categories : [];
         split.data.labels = categories.map((category) => category.name);
-        split.data.datasets[0].data = categories.map((category) => category.amount);
+        split.data.datasets[0].data = categories.map(
+          (category) => category.amount,
+        );
         split.data.datasets[0].backgroundColor = categories.map(
           (category) => category.color,
         );

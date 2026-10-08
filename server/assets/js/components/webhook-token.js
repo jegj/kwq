@@ -8,7 +8,9 @@ export default (hasToken) => ({
     this.generating = true;
     this.error = null;
     try {
-      const response = await fetch('/app/settings/webhook-token', { method: 'POST' });
+      const response = await fetch('/app/settings/webhook-token', {
+        method: 'POST',
+      });
       if (response.status === 409) {
         this.hasToken = true;
         this.confirmOpen = false;

@@ -15,7 +15,7 @@
     "start:dev": "npm run build:assets:watch & nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "biome lint src/ test/",
+    "lint": "biome lint src/ test/ assets/js scripts/",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

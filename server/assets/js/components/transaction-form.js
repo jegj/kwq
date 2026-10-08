@@ -95,7 +95,9 @@ export default (redirectAfterDelete, nowInput) => {
         },
       );
       if (!ok) return;
-      notifyAfterNavigation(editing ? 'Transaction saved' : 'Transaction added');
+      notifyAfterNavigation(
+        editing ? 'Transaction saved' : 'Transaction added',
+      );
       location.reload();
     },
     async remove() {
