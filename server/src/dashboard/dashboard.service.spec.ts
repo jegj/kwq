@@ -48,35 +48,62 @@ describe('DashboardService.getMonthNav', () => {
   });
 });
 
+const userId = 'user-1';
+
+interface Stubs {
+  // Totals keyed by the range's start month (UTC, Lima midnight is 05:00).
+  totalsByMonth?: Record<string, any[]>;
+  categories?: any[];
+  uncategorized?: any[];
+  merchants?: any[];
+  daily?: any[];
+  recent?: any[];
+  biggest?: any[];
+}
+
+const twoCurrencies = {
+  '2026-10': [
+    { currency: 'PEN', total: 300, count: 4 },
+    { currency: 'USD', total: 50, count: 1 },
+  ],
+};
+
+function serviceWith({
+  totalsByMonth = twoCurrencies,
+  categories = [],
+  uncategorized = [],
+  merchants = [],
+  daily = [],
+  recent = [],
+  biggest = [],
+}: Stubs = {}) {
+  const repository = {
+    totalsByCurrency: vi.fn(
+      async (_userId: string, range: { gte: Date }) =>
+        totalsByMonth[range.gte.toISOString().slice(0, 7)] ?? [],
+    ),
+    totalsByCategory: vi.fn(async () => categories),
+    uncategorizedCounts: vi.fn(async () => uncategorized),
+    topMerchants: vi.fn(async () => merchants),
+    dailyTotals: vi.fn(async () => daily),
+    recentTransactions: vi.fn(async () => recent),
+    biggestTransactions: vi.fn(async () => biggest),
+  } as unknown as DashboardRepository;
+  return new DashboardService(repository);
+}
+
 describe('DashboardService.getSummaries', () => {
-  const userId = 'user-1';
-
-  // Returns the stub rows keyed by the range's start month (UTC, Lima midnight is 05:00).
-  function serviceWith(
-    rowsByMonth: Record<string, any[]>,
-    categoryRows: any[] = [],
-  ) {
-    const repository = {
-      totalsByCategory: vi.fn(async () => categoryRows),
-      transactionsInRange: vi.fn(async () => []),
-      uncategorizedCounts: vi.fn(async () => []),
-      topMerchants: vi.fn(async () => []),
-      totalsByCurrency: vi.fn(
-        async (_userId: string, range: { gte: Date }) =>
-          rowsByMonth[range.gte.toISOString().slice(0, 7)] ?? [],
-      ),
-    } as unknown as DashboardRepository;
-    return new DashboardService(repository);
-  }
-
   it('returns an empty list for a month without transactions', async () => {
-    expect(await serviceWith({}).getSummaries(userId, '2026-10')).toEqual([]);
+    const service = serviceWith({ totalsByMonth: {} });
+    expect(await service.getSummaries(userId, '2026-10')).toEqual([]);
   });
 
   it('computes total, count, average and delta against the previous month', async () => {
     const service = serviceWith({
-      '2026-10': [{ currency: 'PEN', total: 300, count: 4 }],
-      '2026-09': [{ currency: 'PEN', total: 400, count: 8 }],
+      totalsByMonth: {
+        '2026-10': [{ currency: 'PEN', total: 300, count: 4 }],
+        '2026-09': [{ currency: 'PEN', total: 400, count: 8 }],
+      },
     });
     expect(await service.getSummaries(userId, '2026-10')).toMatchObject([
       {
@@ -93,8 +120,10 @@ describe('DashboardService.getSummaries', () => {
 
   it('hides the delta when the previous month has no spend in that currency', async () => {
     const service = serviceWith({
-      '2026-10': [{ currency: 'USD', total: 50, count: 1 }],
-      '2026-09': [{ currency: 'PEN', total: 400, count: 8 }],
+      totalsByMonth: {
+        '2026-10': [{ currency: 'USD', total: 50, count: 1 }],
+        '2026-09': [{ currency: 'PEN', total: 400, count: 8 }],
+      },
     });
     const [summary] = await service.getSummaries(userId, '2026-10');
     expect(summary.delta).toBeNull();
@@ -102,10 +131,12 @@ describe('DashboardService.getSummaries', () => {
 
   it('orders currencies by transaction count, busiest first', async () => {
     const service = serviceWith({
-      '2026-10': [
-        { currency: 'USD', total: 50, count: 1 },
-        { currency: 'PEN', total: 300, count: 4 },
-      ],
+      totalsByMonth: {
+        '2026-10': [
+          { currency: 'USD', total: 50, count: 1 },
+          { currency: 'PEN', total: 300, count: 4 },
+        ],
+      },
     });
     const summaries = await service.getSummaries(userId, '2026-10');
     expect(summaries.map((summary) => summary.currency)).toEqual([
@@ -116,32 +147,14 @@ describe('DashboardService.getSummaries', () => {
 });
 
 describe('DashboardService.getSummaries categories', () => {
-  const userId = 'user-1';
-
-  function serviceWith(categoryRows: any[]) {
-    const repository = {
-      totalsByCurrency: vi.fn(async (_userId: string, range: { gte: Date }) =>
-        range.gte.toISOString().startsWith('2026-10')
-          ? [
-              { currency: 'PEN', total: 300, count: 4 },
-              { currency: 'USD', total: 50, count: 1 },
-            ]
-          : [],
-      ),
-      totalsByCategory: vi.fn(async () => categoryRows),
-      transactionsInRange: vi.fn(async () => []),
-      uncategorizedCounts: vi.fn(async () => []),
-      topMerchants: vi.fn(async () => []),
-    } as unknown as DashboardRepository;
-    return new DashboardService(repository);
-  }
-
   it('groups categories per currency, biggest first', async () => {
-    const summaries = await serviceWith([
-      { currency: 'PEN', name: 'Transport', color: '#111111', total: 100 },
-      { currency: 'PEN', name: 'Food', color: '#222222', total: 200 },
-      { currency: 'USD', name: 'Shopping', color: '#333333', total: 50 },
-    ]).getSummaries(userId, '2026-10');
+    const summaries = await serviceWith({
+      categories: [
+        { currency: 'PEN', name: 'Transport', color: '#111111', total: 100 },
+        { currency: 'PEN', name: 'Food', color: '#222222', total: 200 },
+        { currency: 'USD', name: 'Shopping', color: '#333333', total: 50 },
+      ],
+    }).getSummaries(userId, '2026-10');
 
     expect(summaries[0].categories).toEqual([
       { name: 'Food', color: '#222222', amount: 200 },
@@ -153,9 +166,9 @@ describe('DashboardService.getSummaries categories', () => {
   });
 
   it('labels transactions without a category as Uncategorized', async () => {
-    const [summary] = await serviceWith([
-      { currency: 'PEN', name: null, color: null, total: 300 },
-    ]).getSummaries(userId, '2026-10');
+    const [summary] = await serviceWith({
+      categories: [{ currency: 'PEN', name: null, color: null, total: 300 }],
+    }).getSummaries(userId, '2026-10');
 
     expect(summary.categories).toEqual([
       { name: 'Uncategorized', color: '#8b95a7', amount: 300 },
@@ -163,67 +176,41 @@ describe('DashboardService.getSummaries categories', () => {
   });
 
   it('falls back to a palette color when a category has none', async () => {
-    const [summary] = await serviceWith([
-      { currency: 'PEN', name: 'Food', color: null, total: 300 },
-    ]).getSummaries(userId, '2026-10');
+    const [summary] = await serviceWith({
+      categories: [{ currency: 'PEN', name: 'Food', color: null, total: 300 }],
+    }).getSummaries(userId, '2026-10');
 
     expect(summary.categories[0].color).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
   it('picks the biggest real category as top, ignoring Uncategorized', async () => {
-    const [summary] = await serviceWith([
-      { currency: 'PEN', name: null, color: null, total: 250 },
-      { currency: 'PEN', name: 'Food', color: '#222222', total: 50 },
-    ]).getSummaries(userId, '2026-10');
+    const [summary] = await serviceWith({
+      categories: [
+        { currency: 'PEN', name: null, color: null, total: 250 },
+        { currency: 'PEN', name: 'Food', color: '#222222', total: 50 },
+      ],
+    }).getSummaries(userId, '2026-10');
 
     expect(summary.topCategory).toBe('Food');
   });
 
   it('has no top category when everything is uncategorized', async () => {
-    const [summary] = await serviceWith([
-      { currency: 'PEN', name: null, color: null, total: 300 },
-    ]).getSummaries(userId, '2026-10');
+    const [summary] = await serviceWith({
+      categories: [{ currency: 'PEN', name: null, color: null, total: 300 }],
+    }).getSummaries(userId, '2026-10');
 
     expect(summary.topCategory).toBeNull();
   });
 });
 
 describe('DashboardService.getSummaries daily', () => {
-  const userId = 'user-1';
-
-  function serviceWith(amountsByMonth: Record<string, any[]>) {
-    const repository = {
-      totalsByCurrency: vi.fn(async (_userId: string, range: { gte: Date }) => {
-        const month = range.gte.toISOString().slice(0, 7);
-        return month === '2026-10' || month === '2026-09'
-          ? [{ currency: 'PEN', total: 150, count: 3 }]
-          : [];
-      }),
-      totalsByCategory: vi.fn(async () => []),
-      uncategorizedCounts: vi.fn(async () => []),
-      topMerchants: vi.fn(async () => []),
-      transactionsInRange: vi.fn(
-        async (_userId: string, range: { gte: Date }) =>
-          amountsByMonth[range.gte.toISOString().slice(0, 7)] ?? [],
-      ),
-    } as unknown as DashboardRepository;
-    return new DashboardService(repository);
-  }
-
-  const amount = (iso: string, value: number, currency = 'PEN') => ({
-    currency,
-    amount: value,
-    date: new Date(iso),
-  });
-
-  it('sums spend per Lima day across the whole month, future days included', async () => {
+  it('places spend on its day and zero-fills the rest of the month', async () => {
     const [summary] = await serviceWith({
-      '2026-10': [
-        // 03:00 UTC is still the previous day in Lima, so this lands on Oct 1
-        amount('2026-10-02T03:00:00Z', 20),
-        amount('2026-10-02T15:00:00Z', 100),
-        amount('2026-10-05T15:00:00Z', 30),
-        amount('2026-10-03T15:00:00Z', 999, 'USD'),
+      daily: [
+        { currency: 'PEN', day: 1, total: 20 },
+        { currency: 'PEN', day: 2, total: 100 },
+        { currency: 'PEN', day: 5, total: 30 },
+        { currency: 'USD', day: 3, total: 999 },
       ],
     }).getSummaries(userId, '2026-10');
 
@@ -233,7 +220,8 @@ describe('DashboardService.getSummaries daily', () => {
 
   it('uses the real length of shorter months', async () => {
     const [summary] = await serviceWith({
-      '2026-09': [amount('2026-09-03T15:00:00Z', 10)],
+      totalsByMonth: { '2026-09': [{ currency: 'PEN', total: 10, count: 1 }] },
+      daily: [{ currency: 'PEN', day: 3, total: 10 }],
     }).getSummaries(userId, '2026-09');
 
     expect(summary.daily).toHaveLength(30);
@@ -242,34 +230,6 @@ describe('DashboardService.getSummaries daily', () => {
 });
 
 describe('DashboardService.getSummaries lists', () => {
-  const userId = 'user-1';
-
-  function serviceWith(
-    rows: any[],
-    categoryRows: any[] = [],
-    uncategorizedRows: any[] = [],
-    merchantRows: any[] = [],
-  ) {
-    const repository = {
-      totalsByCurrency: vi.fn(async (_userId: string, range: { gte: Date }) =>
-        range.gte.toISOString().startsWith('2026-10')
-          ? [
-              { currency: 'PEN', total: 1, count: 1 },
-              { currency: 'USD', total: 1, count: 1 },
-            ]
-          : [],
-      ),
-      totalsByCategory: vi.fn(async () => categoryRows),
-      uncategorizedCounts: vi.fn(async () => uncategorizedRows),
-      topMerchants: vi.fn(async () => merchantRows),
-      transactionsInRange: vi.fn(
-        async (_userId: string, range: { gte: Date }) =>
-          range.gte.toISOString().startsWith('2026-10') ? rows : [],
-      ),
-    } as unknown as DashboardRepository;
-    return new DashboardService(repository);
-  }
-
   const row = (id: number, overrides: Record<string, unknown> = {}) => ({
     id: `id-${id}`,
     merchant: `Shop ${id}`,
@@ -280,38 +240,25 @@ describe('DashboardService.getSummaries lists', () => {
     ...overrides,
   });
 
-  it('lists the 5 most recent transactions of the currency, newest first', async () => {
-    const rows = [1, 2, 3, 4, 5, 6].map((id) => row(id));
-    const [pen] = await serviceWith([
-      ...rows,
-      row(7, { currency: 'USD' }),
-    ]).getSummaries(userId, '2026-10');
+  it('attaches the recent and biggest transactions of each currency, in order', async () => {
+    const [pen, usd] = await serviceWith({
+      recent: [row(3), row(2, { currency: 'USD' }), row(1)],
+      biggest: [row(1), row(2, { currency: 'USD' }), row(3)],
+    }).getSummaries(userId, '2026-10');
 
-    expect(pen.recent.map((item) => item.id)).toEqual([
-      'id-6',
-      'id-5',
-      'id-4',
-      'id-3',
-      'id-2',
-    ]);
-  });
-
-  it('lists the 5 biggest transactions, largest first', async () => {
-    const rows = [5, 90, 20, 70, 10, 60, 30].map((amount, index) =>
-      row(index + 1, { amount }),
-    );
-    const [pen] = await serviceWith(rows).getSummaries(userId, '2026-10');
-
-    expect(pen.biggest.map((item) => item.amount)).toEqual([
-      90, 70, 60, 30, 20,
-    ]);
+    expect(pen.recent.map((item) => item.id)).toEqual(['id-3', 'id-1']);
+    expect(pen.biggest.map((item) => item.id)).toEqual(['id-1', 'id-3']);
+    expect(usd.recent.map((item) => item.id)).toEqual(['id-2']);
+    expect(usd.biggest.map((item) => item.id)).toEqual(['id-2']);
   });
 
   it('describes a list item with a Lima date label and its category color', async () => {
-    const [pen] = await serviceWith(
-      [row(3, { categoryName: 'Food', amount: 24.9 })],
-      [{ currency: 'PEN', name: 'Food', color: '#222222', total: 24.9 }],
-    ).getSummaries(userId, '2026-10');
+    const [pen] = await serviceWith({
+      recent: [row(3, { categoryName: 'Food', amount: 24.9 })],
+      categories: [
+        { currency: 'PEN', name: 'Food', color: '#222222', total: 24.9 },
+      ],
+    }).getSummaries(userId, '2026-10');
 
     expect(pen.recent[0]).toEqual({
       id: 'id-3',
@@ -324,22 +271,22 @@ describe('DashboardService.getSummaries lists', () => {
   });
 
   it('shows Uncategorized in muted gray for a transaction without category', async () => {
-    const [pen] = await serviceWith([row(3)]).getSummaries(userId, '2026-10');
+    const [pen] = await serviceWith({ recent: [row(3)] }).getSummaries(
+      userId,
+      '2026-10',
+    );
 
     expect(pen.recent[0].categoryName).toBeNull();
     expect(pen.recent[0].color).toBe('#8b95a7');
   });
 
   it('attaches the top merchants of each currency', async () => {
-    const [pen, usd] = await serviceWith(
-      [],
-      [],
-      [],
-      [
+    const [pen, usd] = await serviceWith({
+      merchants: [
         { currency: 'PEN', merchant: 'Wong', amount: 50, count: 1 },
         { currency: 'USD', merchant: 'Uber', amount: 25, count: 2 },
       ],
-    ).getSummaries(userId, '2026-10');
+    }).getSummaries(userId, '2026-10');
 
     expect(pen.topMerchants).toEqual([
       { merchant: 'Wong', amount: 50, count: 1 },
@@ -350,11 +297,9 @@ describe('DashboardService.getSummaries lists', () => {
   });
 
   it('counts the transactions without a category per currency', async () => {
-    const [pen, usd] = await serviceWith(
-      [],
-      [],
-      [{ currency: 'PEN', count: 2 }],
-    ).getSummaries(userId, '2026-10');
+    const [pen, usd] = await serviceWith({
+      uncategorized: [{ currency: 'PEN', count: 2 }],
+    }).getSummaries(userId, '2026-10');
 
     expect(pen.uncategorized).toBe(2);
     expect(usd.uncategorized).toBe(0);

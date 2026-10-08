@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface CurrencyTotal {
@@ -24,6 +25,12 @@ export interface MerchantTotalRow {
   merchant: string;
   amount: number;
   count: number;
+}
+
+export interface DailyTotalRow {
+  currency: string;
+  day: number;
+  total: number;
 }
 
 export interface TransactionRow {
@@ -130,29 +137,76 @@ export class DashboardRepository {
       ORDER BY currency, rank`;
   }
 
-  // ponytail: bucketed per Lima day and ranked in JS; move to SQL if a month ever holds thousands of rows
-  async transactionsInRange(
+  // transaction_date is a UTC timestamp without zone: tag it UTC, then shift to Lima.
+  dailyTotals(
     userId: string,
     range: { gte: Date; lt: Date },
+  ): Promise<DailyTotalRow[]> {
+    return this.prisma.$queryRaw<DailyTotalRow[]>`
+      SELECT
+        currency,
+        extract(
+          day FROM transaction_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Lima'
+        )::int AS day,
+        round(sum(amount), 2)::float8 AS total
+      FROM transaction
+      WHERE user_id = ${userId}::uuid
+        AND transaction_date >= ${range.gte}
+        AND transaction_date < ${range.lt}
+      GROUP BY currency, day`;
+  }
+
+  recentTransactions(
+    userId: string,
+    range: { gte: Date; lt: Date },
+    limit: number,
   ): Promise<TransactionRow[]> {
-    const rows = await this.prisma.transaction.findMany({
-      where: { userId, transactionDate: range },
-      select: {
-        id: true,
-        merchant: true,
-        currency: true,
-        amount: true,
-        transactionDate: true,
-        category: { select: { name: true } },
-      },
-    });
-    return rows.map((row) => ({
-      id: row.id,
-      merchant: row.merchant,
-      currency: row.currency,
-      amount: Number(row.amount),
-      date: row.transactionDate,
-      categoryName: row.category?.name ?? null,
-    }));
+    return this.topTransactions(
+      userId,
+      range,
+      limit,
+      Prisma.sql`t.transaction_date DESC, t.id DESC`,
+    );
+  }
+
+  biggestTransactions(
+    userId: string,
+    range: { gte: Date; lt: Date },
+    limit: number,
+  ): Promise<TransactionRow[]> {
+    return this.topTransactions(
+      userId,
+      range,
+      limit,
+      Prisma.sql`t.amount DESC, t.id DESC`,
+    );
+  }
+
+  // Top `limit` transactions per currency, in `orderBy` order.
+  private topTransactions(
+    userId: string,
+    range: { gte: Date; lt: Date },
+    limit: number,
+    orderBy: Prisma.Sql,
+  ): Promise<TransactionRow[]> {
+    return this.prisma.$queryRaw<TransactionRow[]>`
+      SELECT id, merchant, currency, amount, date, "categoryName"
+      FROM (
+        SELECT
+          t.id,
+          t.merchant,
+          t.currency,
+          t.amount::float8 AS amount,
+          t.transaction_date AS date,
+          c.name AS "categoryName",
+          row_number() OVER (PARTITION BY t.currency ORDER BY ${orderBy}) AS rank
+        FROM transaction t
+        LEFT JOIN category c ON c.id = t.category_id
+        WHERE t.user_id = ${userId}::uuid
+          AND t.transaction_date >= ${range.gte}
+          AND t.transaction_date < ${range.lt}
+      ) ranked
+      WHERE rank <= ${limit}
+      ORDER BY currency, rank`;
   }
 }

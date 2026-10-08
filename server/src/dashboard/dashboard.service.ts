@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { monthRange } from '../common/pagination.util.js';
 import {
+  type CategoryTotal,
+  type DailyTotalRow,
   DashboardRepository,
   type TransactionRow,
 } from './dashboard.repository.js';
@@ -86,19 +88,57 @@ function daysInMonth(month: string): number {
   return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
 }
 
-// Spend per Lima day, `length` days long.
+// Spend per Lima day, `length` days long, zero where nothing was spent.
 function dailyTotals(
-  rows: TransactionRow[],
+  rows: DailyTotalRow[],
   currency: string,
   length: number,
 ): number[] {
   const perDay = new Array<number>(length).fill(0);
   for (const row of rows) {
-    if (row.currency !== currency) continue;
-    const day = new Date(row.date.getTime() - LIMA_UTC_OFFSET_MS).getUTCDate();
-    perDay[day - 1] += row.amount;
+    if (row.currency === currency) perDay[row.day - 1] = row.total;
   }
-  return perDay.map((value) => Math.round(value * 100) / 100);
+  return perDay;
+}
+
+function inCurrency<T extends { currency: string }>(
+  rows: T[],
+  currency: string,
+): T[] {
+  return rows.filter((row) => row.currency === currency);
+}
+
+function buildCategories(rows: CategoryTotal[]): CategorySlice[] {
+  return [...rows]
+    .sort((first, second) => second.total - first.total)
+    .map((row, index) => ({
+      name: row.name ?? UNCATEGORIZED,
+      color: row.name
+        ? (row.color ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length])
+        : UNCATEGORIZED_COLOR,
+      amount: row.total,
+    }));
+}
+
+function toItem(
+  row: TransactionRow,
+  colorByName: Map<string, string>,
+): TransactionItem {
+  return {
+    id: row.id,
+    merchant: row.merchant,
+    categoryName: row.categoryName,
+    color:
+      colorByName.get(row.categoryName ?? UNCATEGORIZED) ?? UNCATEGORIZED_COLOR,
+    amount: row.amount,
+    date: dateLabel.format(row.date),
+  };
+}
+
+// Percent change vs the previous month, one decimal; null with no baseline.
+function deltaPercent(total: number, previousTotal: number): number | null {
+  if (previousTotal <= 0) return null;
+  return Math.round(((total - previousTotal) / previousTotal) * 1000) / 10;
 }
 
 @Injectable()
@@ -132,90 +172,58 @@ export class DashboardService {
     month: string,
   ): Promise<CurrencySummary[]> {
     const [year, monthNumber] = month.split('-').map(Number);
-    const previousMonth = formatMonth(year, monthNumber - 2);
+    const range = monthRange(month)!;
+    const previousRange = monthRange(formatMonth(year, monthNumber - 2))!;
     const [
       current,
       previous,
       categoryRows,
-      currentAmounts,
+      recentRows,
+      biggestRows,
       uncategorizedRows,
       merchantRows,
+      dailyRows,
     ] = await Promise.all([
-      this.repository.totalsByCurrency(userId, monthRange(month)!),
-      this.repository.totalsByCurrency(userId, monthRange(previousMonth)!),
-      this.repository.totalsByCategory(userId, monthRange(month)!),
-      this.repository.transactionsInRange(userId, monthRange(month)!),
-      this.repository.uncategorizedCounts(userId, monthRange(month)!),
-      this.repository.topMerchants(userId, monthRange(month)!, LIST_SIZE),
+      this.repository.totalsByCurrency(userId, range),
+      this.repository.totalsByCurrency(userId, previousRange),
+      this.repository.totalsByCategory(userId, range),
+      this.repository.recentTransactions(userId, range, LIST_SIZE),
+      this.repository.biggestTransactions(userId, range, LIST_SIZE),
+      this.repository.uncategorizedCounts(userId, range),
+      this.repository.topMerchants(userId, range, LIST_SIZE),
+      this.repository.dailyTotals(userId, range),
     ]);
 
     const previousTotals = new Map(
       previous.map((row) => [row.currency, row.total]),
     );
-
     const uncategorizedByCurrency = new Map(
       uncategorizedRows.map((row) => [row.currency, row.count]),
     );
 
     return current
-      .map(({ currency, total, count }) => {
-        const previousTotal = previousTotals.get(currency) ?? 0;
-        const categories = categoryRows
-          .filter((row) => row.currency === currency)
-          .sort((first, second) => second.total - first.total)
-          .map((row, index) => ({
-            name: row.name ?? UNCATEGORIZED,
-            color: row.name
-              ? (row.color ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length])
-              : UNCATEGORIZED_COLOR,
-            amount: row.total,
-          }));
+      .map(({ currency, total, count }): CurrencySummary => {
+        const categories = buildCategories(inCurrency(categoryRows, currency));
         const colorByName = new Map(
           categories.map((category) => [category.name, category.color]),
         );
-        const rows = currentAmounts.filter((row) => row.currency === currency);
-        const toItem = (row: TransactionRow): TransactionItem => ({
-          id: row.id,
-          merchant: row.merchant,
-          categoryName: row.categoryName,
-          color:
-            colorByName.get(row.categoryName ?? UNCATEGORIZED) ??
-            UNCATEGORIZED_COLOR,
-          amount: row.amount,
-          date: dateLabel.format(row.date),
-        });
+        const item = (row: TransactionRow) => toItem(row, colorByName);
         return {
           currency,
           total,
           count,
           average: total / count,
-          delta:
-            previousTotal > 0
-              ? Math.round(((total - previousTotal) / previousTotal) * 1000) /
-                10
-              : null,
+          delta: deltaPercent(total, previousTotals.get(currency) ?? 0),
           categories,
           topCategory:
             categories.find((category) => category.name !== UNCATEGORIZED)
               ?.name ?? null,
-          daily: dailyTotals(currentAmounts, currency, daysInMonth(month)),
-          recent: [...rows]
-            .sort(
-              (first, second) => second.date.getTime() - first.date.getTime(),
-            )
-            .slice(0, LIST_SIZE)
-            .map(toItem),
-          biggest: [...rows]
-            .sort((first, second) => second.amount - first.amount)
-            .slice(0, LIST_SIZE)
-            .map(toItem),
-          topMerchants: merchantRows
-            .filter((row) => row.currency === currency)
-            .map(({ merchant, amount, count }) => ({
-              merchant,
-              amount,
-              count,
-            })),
+          daily: dailyTotals(dailyRows, currency, daysInMonth(month)),
+          recent: inCurrency(recentRows, currency).map(item),
+          biggest: inCurrency(biggestRows, currency).map(item),
+          topMerchants: inCurrency(merchantRows, currency).map(
+            ({ merchant, amount, count }) => ({ merchant, amount, count }),
+          ),
           uncategorized: uncategorizedByCurrency.get(currency) ?? 0,
         };
       })
