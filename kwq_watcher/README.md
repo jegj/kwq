@@ -50,8 +50,8 @@ Edit the `CONFIG` block in `config.gs`:
 ```javascript
 const CONFIG = {
   senders: ['alerts@yourbank.com'],      // addresses to watch
-  webhookUrl: 'https://your-server/hooks/gmail',
-  sharedSecret: 'a-long-random-string',  // sent as X-Webhook-Secret
+  webhookUrl: 'https://your-server/hooks/email',
+  webhookToken: 'your-per-user-token',   // sent as X-Kwq-Token
   lookbackWindow: '2d',                  // how far back each run searches
   maxThreads: 25,                        // per-run safety cap
   maxSeenIds: 400,
