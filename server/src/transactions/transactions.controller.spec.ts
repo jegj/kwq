@@ -35,7 +35,7 @@ const validBody = {
   amount: 10.5,
   currency: 'PEN',
   merchant: 'Shop',
-  transactionDate: '2026-09-30T12:00:00.000Z',
+  transactionDate: '2026-09-30T07:00',
 } as any;
 
 function controllerWith(rows: unknown[] = []) {

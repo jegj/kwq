@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { monthRange } from '../common/pagination.util.js';
+import { APP_TIMEZONE, currentMonthIn } from '../common/timezone.util.js';
 import {
   type CategoryTotal,
   type DailyTotalRow,
@@ -28,12 +29,10 @@ const LIST_SIZE = 5;
 const dateLabel = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
-  timeZone: 'America/Lima',
+  timeZone: APP_TIMEZONE,
 });
 
 const MONTH_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])$/;
-// Lima has no DST, so it is a fixed UTC-5.
-const LIMA_UTC_OFFSET_MS = 5 * 60 * 60 * 1000;
 
 function formatMonth(year: number, monthIndex: number): string {
   // Date.UTC normalises overflow, so monthIndex -1 / 12 wrap the year.
@@ -41,17 +40,12 @@ function formatMonth(year: number, monthIndex: number): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-function currentMonth(now: Date): string {
-  const lima = new Date(now.getTime() - LIMA_UTC_OFFSET_MS);
-  return formatMonth(lima.getUTCFullYear(), lima.getUTCMonth());
-}
-
 function daysInMonth(month: string): number {
   const [year, monthNumber] = month.split('-').map(Number);
   return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
 }
 
-// Spend per Lima day, `length` days long, zero where nothing was spent.
+// Spend per local day, `length` days long, zero where nothing was spent.
 function dailyTotals(
   rows: DailyTotalRow[],
   currency: string,
@@ -109,7 +103,7 @@ export class DashboardService {
   constructor(private readonly repository: DashboardRepository) {}
 
   getMonthNav(requested: string | undefined, now = new Date()): MonthNav {
-    const current = currentMonth(now);
+    const current = currentMonthIn(APP_TIMEZONE, now);
 
     const match = requested ? MONTH_PATTERN.exec(requested) : null;
     // Same-length YYYY-MM strings compare chronologically.

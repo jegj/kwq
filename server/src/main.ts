@@ -14,6 +14,7 @@ import { AppModule, ObserveInstrument } from './app.module.js';
 import { RedirectExceptionFilter } from './auth/redirect/redirect.exception.js';
 import {
   formatDateTime,
+  formatInputValue,
   formatMoney,
   titleCase,
 } from './common/format.util.js';
@@ -38,7 +39,7 @@ async function bootstrap() {
   await app.register(fastifyView, {
     engine: { ejs },
     root: join(import.meta.dirname, 'views'),
-    defaultContext: { fmt: { formatMoney, formatDateTime, titleCase } },
+    defaultContext: { fmt: { formatMoney, formatDateTime, formatInputValue, titleCase } },
   });
   await app.register(fastifyCookie);
 

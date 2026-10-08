@@ -1,10 +1,8 @@
 <%# Expects a wrapping x-data="transactionForm(redirectAfterDelete)" and `categories` local. %>
 <script>
   document.addEventListener('alpine:init', () => {
-    // Lima has no DST: fixed UTC-5, matching the month filter.
-    const toLimaInput = (iso) =>
-      new Date(new Date(iso).getTime() - 5 * 3600 * 1000).toISOString().slice(0, 16);
-    const fromLimaInput = (value) => new Date(`${value}:00-05:00`).toISOString();
+    // Dates travel as zone-less "YYYY-MM-DDTHH:mm"; the server owns the timezone.
+    const nowInput = <%- JSON.stringify(fmt.formatInputValue(new Date())) %>;
     // Shown by the toast in app-layout once the next page loads.
     const notifyAfterNavigation = (message) => {
       try {
@@ -15,7 +13,7 @@
       merchant: '',
       amount: '',
       currency: 'PEN',
-      transactionDate: toLimaInput(new Date().toISOString()),
+      transactionDate: nowInput,
       operationType: '',
       categoryId: '',
       description: '',
@@ -42,7 +40,7 @@
           merchant: transaction.merchant,
           amount: transaction.amount,
           currency: transaction.currency,
-          transactionDate: toLimaInput(transaction.transactionDate),
+          transactionDate: transaction.transactionDate,
           operationType: transaction.operationType ?? '',
           categoryId: transaction.categoryId ?? '',
           description: transaction.description ?? '',
@@ -85,7 +83,7 @@
           merchant: this.form.merchant,
           amount: Number(this.form.amount),
           currency: this.form.currency.toUpperCase(),
-          transactionDate: fromLimaInput(this.form.transactionDate),
+          transactionDate: this.form.transactionDate,
           operationType: this.form.operationType || null,
           categoryId: this.form.categoryId || null,
           description: this.form.description || null,
@@ -141,7 +139,7 @@
         </label>
       </div>
       <label>
-        Date (Lima)
+        Date
         <input type="datetime-local" required x-model="form.transactionDate" />
       </label>
       <div class="grid">

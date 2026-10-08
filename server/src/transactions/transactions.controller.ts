@@ -23,6 +23,7 @@ import {
   monthRange,
   parseCursor,
 } from '../common/pagination.util.js';
+import { APP_TIMEZONE, parseInputValue } from '../common/timezone.util.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TransactionDto } from './dto/transaction.dto.js';
 
@@ -215,7 +216,7 @@ export class TransactionsController {
       amount: body.amount,
       currency: body.currency,
       merchant: body.merchant,
-      transactionDate: new Date(body.transactionDate),
+      transactionDate: parseInputValue(APP_TIMEZONE, body.transactionDate)!,
       description: body.description ?? null,
       cardLastFour: body.cardLastFour ?? null,
       operationNumber: body.operationNumber ?? null,

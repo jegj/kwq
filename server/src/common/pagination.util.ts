@@ -1,3 +1,5 @@
+import { APP_TIMEZONE, zonedToUtc } from './timezone.util.js';
+
 export interface Cursor {
   date: Date;
   id: string;
@@ -5,8 +7,6 @@ export interface Cursor {
 
 const MONTH_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])$/;
 const CURSOR_PATTERN = /^(\d+)_([0-9a-f-]{36})$/i;
-// Lima has no DST, so its midnight is a fixed 05:00 UTC.
-const LIMA_UTC_OFFSET_HOURS = 5;
 
 export function monthRange(
   month: string | undefined,
@@ -18,8 +18,8 @@ export function monthRange(
   const year = Number(match[1]);
   const monthIndex = Number(match[2]) - 1;
   return {
-    gte: new Date(Date.UTC(year, monthIndex, 1, LIMA_UTC_OFFSET_HOURS)),
-    lt: new Date(Date.UTC(year, monthIndex + 1, 1, LIMA_UTC_OFFSET_HOURS)),
+    gte: zonedToUtc(APP_TIMEZONE, year, monthIndex, 1),
+    lt: zonedToUtc(APP_TIMEZONE, year, monthIndex + 1, 1),
   };
 }
 

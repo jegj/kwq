@@ -91,6 +91,19 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   app-specific lower-environment logic (currently just the pino-pretty
   switch above). Both live in `server/.env` / `.env.example`.
 
+## Timezone
+
+- All DB timestamps are `timestamptz` (`@db.Timestamptz(3)`): real instants,
+  no zone ambiguity in storage.
+- `APP_TIMEZONE` (default `America/Lima`, in `server/.env`) is the zone of the
+  bank emails and their readers. `server/src/common/timezone.util.ts` is the
+  only code that knows it; it's used where zone-less text is read (BCP
+  parser's "Fecha y hora", `datetime-local` form values) or where local time
+  is shown/bucketed (month boundaries, display formatting, dashboard daily
+  grouping via `AT TIME ZONE` in SQL). DST-safe, no hardcoded offsets.
+- The browser never converts zones: forms send zone-less `YYYY-MM-DDTHH:mm`
+  and the server interprets it in `APP_TIMEZONE`.
+
 ## Auth implementation
 
 - Session cookie named `session`, httpOnly, `SameSite=Lax`, holding a JWT
@@ -194,7 +207,7 @@ per the stack decision above); JSON endpoints exist only for mutations
   - `GET /app/emails` — read-only list, own rows only. Keyset-paginated on
     `(createdAt DESC, id DESC)`, 20 per page: `?before=<cursor>` (older) /
     `?after=<cursor>` (newer), cursor = `<createdAtMs>_<id>`. Optional
-    `?month=YYYY-MM` filter, boundaries in America/Lima (fixed UTC-5).
+    `?month=YYYY-MM` filter, boundaries in `APP_TIMEZONE` (see Timezone).
   - `GET /app/emails/:id` — metadata + sandboxed-iframe preview of `bodyHtml`
     (falls back to plain `body`); 404 for other users' emails; links to its
     transaction if parsed

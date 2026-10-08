@@ -1,7 +1,6 @@
 import { OperationType } from '@prisma/client';
 import {
   IsEnum,
-  IsISO8601,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -25,7 +24,7 @@ export class TransactionDto {
   @MaxLength(100)
   merchant!: string;
 
-  @IsISO8601()
+  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
   transactionDate!: string;
 
   @IsOptional()

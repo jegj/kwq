@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { APP_TIMEZONE } from '../common/timezone.util.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface CurrencyTotal {
@@ -137,7 +138,7 @@ export class DashboardRepository {
       ORDER BY currency, rank`;
   }
 
-  // transaction_date is a UTC timestamp without zone: tag it UTC, then shift to Lima.
+  // transaction_date is timestamptz: AT TIME ZONE yields the local wall-clock day.
   dailyTotals(
     userId: string,
     range: { gte: Date; lt: Date },
@@ -146,7 +147,7 @@ export class DashboardRepository {
       SELECT
         currency,
         extract(
-          day FROM transaction_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Lima'
+          day FROM transaction_date AT TIME ZONE ${APP_TIMEZONE}::text
         )::int AS day,
         round(sum(amount), 2)::float8 AS total
       FROM transaction

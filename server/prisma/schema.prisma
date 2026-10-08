@@ -12,8 +12,8 @@ model User {
   passwordHash String        @map("password_hash")
   role         Role          @default(USER)
   webhookToken String?       @unique @map("webhook_token")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  createdAt    DateTime      @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt    DateTime      @db.Timestamptz(3) @updatedAt @map("updated_at")
   categories   Category[]
   emails       EmailNotification[]
   transactions Transaction[]
@@ -34,8 +34,8 @@ model Category {
   name         String
   icon         String?
   color        String?
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  createdAt    DateTime      @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt    DateTime      @db.Timestamptz(3) @updatedAt @map("updated_at")
   transactions Transaction[]
 
   @@unique([userId, name])
@@ -51,13 +51,13 @@ model EmailNotification {
   subject       String
   body          String
   bodyHtml      String       @map("body_html")
-  receivedAt    DateTime     @map("received_at")
+  receivedAt    DateTime     @db.Timestamptz(3) @map("received_at")
   parseStatus   ParseStatus  @default(UNPARSED) @map("parse_status")
   parserName    String?      @map("parser_name")
   transactionId String?      @unique @db.Uuid @map("transaction_id")
   transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  createdAt     DateTime     @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt     DateTime     @db.Timestamptz(3) @updatedAt @map("updated_at")
 
   @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
   @@map("email_notification")
@@ -89,11 +89,11 @@ model Transaction {
   operationNumber       String?   @map("operation_number")
   operationDescription  String?   @map("operation_description")
   operationType         OperationType? @map("operation_type")
-  transactionDate       DateTime  @map("transaction_date")
+  transactionDate       DateTime  @db.Timestamptz(3) @map("transaction_date")
   isManuallyCategorized Boolean   @default(false) @map("is_manually_categorized")
   email                 EmailNotification?
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
+  createdAt             DateTime  @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt             DateTime  @db.Timestamptz(3) @updatedAt @map("updated_at")
 
   @@index([userId, transactionDate])
   @@map("transaction")
@@ -104,7 +104,7 @@ model UserActivity {
   userId    String   @db.Uuid @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   action    String
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
 
   @@index([userId, createdAt])
   @@map("user_activity")

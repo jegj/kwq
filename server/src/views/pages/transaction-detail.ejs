@@ -6,7 +6,7 @@
       <button
         type="button"
         class="outline secondary"
-        data-transaction="<%= JSON.stringify(transaction) %>"
+        data-transaction="<%= JSON.stringify({ ...transaction, transactionDate: fmt.formatInputValue(transaction.transactionDate) }) %>"
         x-on:click="openEdit(JSON.parse($el.dataset.transaction))"
       >Edit</button>
       <button

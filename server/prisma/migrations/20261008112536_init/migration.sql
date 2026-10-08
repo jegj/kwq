@@ -14,8 +14,8 @@ CREATE TABLE "user" (
     "password_hash" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'USER',
     "webhook_token" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
@@ -27,8 +27,8 @@ CREATE TABLE "category" (
     "name" TEXT NOT NULL,
     "icon" TEXT,
     "color" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "category_pkey" PRIMARY KEY ("id")
 );
@@ -42,12 +42,12 @@ CREATE TABLE "email_notification" (
     "subject" TEXT NOT NULL,
     "body" TEXT NOT NULL,
     "body_html" TEXT NOT NULL,
-    "received_at" TIMESTAMP(3) NOT NULL,
+    "received_at" TIMESTAMPTZ(3) NOT NULL,
     "parse_status" "ParseStatus" NOT NULL DEFAULT 'UNPARSED',
     "parser_name" TEXT,
     "transaction_id" UUID,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "email_notification_pkey" PRIMARY KEY ("id")
 );
@@ -65,10 +65,10 @@ CREATE TABLE "transaction" (
     "operation_number" TEXT,
     "operation_description" TEXT,
     "operation_type" "OperationType",
-    "transaction_date" TIMESTAMP(3) NOT NULL,
+    "transaction_date" TIMESTAMPTZ(3) NOT NULL,
     "is_manually_categorized" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "transaction_pkey" PRIMARY KEY ("id")
 );
@@ -78,7 +78,7 @@ CREATE TABLE "user_activity" (
     "id" UUID NOT NULL DEFAULT uuidv7(),
     "user_id" UUID NOT NULL,
     "action" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "user_activity_pkey" PRIMARY KEY ("id")
 );
