@@ -195,9 +195,14 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
     dialogs should call `crudDialog({...})` instead of copying it.
   - `assets/js/dashboard.js` is a separate entry (Chart.js + the dashboard
     component), loaded only by `dashboard.ejs` so other pages skip it.
-- Templates link files as `/assets/<file>?v=<%= assetVersion %>`;
-  `assetVersion` is a server-start timestamp set in the view
-  `defaultContext` (`main.ts` and `test/bootstrap.ts`).
+- Templates link files with `<%= asset('app.css') %>`, which yields
+  `/assets/app.css?v=<content hash>`. The build writes the hashes to
+  `dist/public/manifest.json`; `createAssetUrl`
+  (`server/src/common/asset-url.util.ts`) reads it (re-reading when its
+  mtime changes) and is set as the `asset` view `defaultContext` helper in
+  `main.ts` and `test/bootstrap.ts`. URLs only change when a file's bytes
+  do, so a long proxy `expires` on `/assets/` is safe. A missing manifest
+  falls back to the plain URL.
 - Commands (inside `server/`): `npm run build:assets` (minified, cleans
   `dist/public` first), `npm run build:assets:watch` (unminified +
   sourcemaps), `npm run build` (`rm -rf dist` + `nest build` + assets;
@@ -207,6 +212,40 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   `dist/public`; `build` cleans `dist` (and `tsconfig.build.tsbuildinfo`,
   otherwise `tsc` skips emitting) itself.
 - `npm run lint` also covers `assets/js` and `scripts/`.
+
+## Deployment (Caddy reverse proxy)
+
+- Nest stays the origin for everything, `/assets/*` included. Caddy only
+  adds TLS, compression and browser-cache headers; it does not cache
+  responses itself (that needs a plugin).
+
+  ```
+  yourdomain.com {
+      encode zstd gzip
+
+      @assets path /assets/*
+      header @assets >Cache-Control "public, max-age=31536000, immutable"
+
+      reverse_proxy localhost:3000
+  }
+  ```
+
+  - `>` on the header sets it after the upstream replies, so it overrides
+    whatever Nest sent instead of duplicating it.
+  - The year-long `immutable` is safe because asset URLs carry a content
+    hash (`?v=`, see Frontend assets) that changes with the file's bytes.
+- **TLS**: automatic. Using a real domain name as the site address makes
+  Caddy obtain a Let's Encrypt (or ZeroSSL) certificate itself, redirect
+  HTTP to HTTPS, and renew it in the background (~30 days before expiry) —
+  no certbot or cron. Requirements:
+  - DNS `A`/`AAAA` record for the domain points at the box.
+  - Ports 80 and 443 are open (80 is used for the ACME challenge).
+  - Caddy's data dir (`/var/lib/caddy`, or the `/data` volume in Docker)
+    is persistent — losing it means re-issuing and risks rate limits.
+  - Optional `{ email you@example.com }` global block for expiry notices.
+- The `session` cookie is `Secure` outside `APP_ENV=development`, so prod
+  must be reached over HTTPS (Caddy does that); plain-HTTP prod logins
+  won't stick.
 
 ## URL design
 
