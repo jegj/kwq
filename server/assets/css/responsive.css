@@ -1,0 +1,152 @@
+@media (max-width: 640px) {
+  .users-header,
+  .categories-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .users-header button,
+  .categories-header button {
+    width: 100%;
+  }
+
+  table thead {
+    display: none;
+  }
+
+  table,
+  table tbody,
+  table tr,
+  table td {
+    display: block;
+    width: 100%;
+  }
+
+  table tr {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+  }
+
+  table td {
+    border: none;
+    padding: 0.35rem 0;
+  }
+
+  .amount {
+    text-align: left;
+  }
+
+  .emails-row-actions:empty {
+    display: none;
+  }
+
+  .toast {
+    right: 1rem;
+    left: 1rem;
+  }
+
+  .not-found-actions,
+  .not-found-actions a {
+    width: 100%;
+  }
+
+  .emails-filter {
+    flex-wrap: wrap;
+  }
+
+  .emails-filter label {
+    flex: 1 1 100%;
+  }
+
+  .emails-filter button,
+  .emails-filter a {
+    flex: 1 1 0;
+    text-align: center;
+    width: auto;
+  }
+
+  .emails-pager a {
+    flex: 1 1 0;
+    text-align: center;
+  }
+
+  .emails-preview {
+    height: 60vh;
+  }
+
+  table td:not(.users-row-actions):not(.categories-row-actions):not(.emails-row-actions)::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+  }
+
+  .users-row-actions {
+    justify-content: flex-start;
+    padding-top: 0.5rem;
+  }
+
+  .categories-actions {
+    justify-content: flex-start;
+    padding-top: 0.5rem;
+  }
+
+  /* Equal-width action buttons across the card. */
+  .categories-actions button,
+  .categories-actions a[role="button"] {
+    flex: 1 1 0;
+    text-align: center;
+  }
+}
+
+.sidebar-toggle {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Pico scales --pico-font-size up from 576px, for desktop reading
+     comfort. The overlay drawer below is sized in rem and wants to
+     stay compact, so pin the scale back down while it's in play. */
+  :root {
+    --pico-font-size: 100%;
+  }
+
+  .sidebar-toggle {
+    display: inline-flex;
+  }
+
+  .app-shell {
+    gap: 0;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: 14rem;
+    padding: 1.5rem 1rem;
+    background: var(--pico-background-color);
+    border-right: 1px solid var(--pico-muted-border-color);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .app-shell.sidebar-open .app-sidebar {
+    transform: translateX(0);
+  }
+
+  .app-shell.sidebar-open .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+

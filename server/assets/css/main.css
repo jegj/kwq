@@ -1,0 +1,6 @@
+@import "@picocss/pico/css/pico.slate.min.css";
+@import "./base.css";
+@import "./components.css";
+@import "./responsive.css";
+@import "./polish.css";
+@import "./dashboard.css";

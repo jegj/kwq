@@ -1,0 +1,180 @@
+/* ---- Visual polish: flat, quiet, consistent. Kept last so it wins. ---- */
+:root[data-theme="dark"] {
+  --pico-border-radius: 0.6rem;
+  --pico-card-box-shadow: none;
+  --pico-card-border-color: var(--pico-muted-border-color);
+  --pico-spacing: 1rem;
+}
+
+body > header.container {
+  padding-block: 0.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+main.container {
+  padding-bottom: 3rem;
+}
+
+h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+}
+
+article {
+  border: 1px solid var(--pico-card-border-color);
+  box-shadow: none;
+}
+
+/* Sidebar stays in view while long lists scroll. */
+.app-sidebar {
+  position: sticky;
+  top: 1rem;
+}
+
+.app-sidebar a {
+  border-radius: var(--pico-border-radius);
+  border-left: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.app-sidebar a:hover {
+  background: var(--pico-card-background-color);
+}
+
+.app-sidebar a[aria-current='page'] {
+  background: color-mix(in srgb, var(--pico-primary) 14%, transparent);
+}
+
+/* Tables: hairline rows, no zebra stripes. */
+table {
+  --pico-table-border-color: var(--pico-muted-border-color);
+}
+
+table thead th {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pico-muted-color);
+}
+
+.users-header {
+  margin-bottom: 1rem;
+}
+
+.profile-face {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.profile-dropdown {
+  max-width: calc(100vw - 2rem);
+}
+
+.emails-meta {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+}
+
+.emails-meta dt,
+.emails-meta dd {
+  padding-block: 0.25rem;
+}
+
+.toast {
+  border: 1px solid var(--pico-muted-border-color);
+  border-left: 3px solid var(--pico-ins-color);
+}
+
+@media (max-width: 768px) {
+  /* 44px tap targets for the nav drawer and its toggle. */
+  .sidebar-toggle {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    margin: 0;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+  }
+
+  .app-sidebar a {
+    padding: 0.75rem;
+  }
+
+  main.container {
+    padding-bottom: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  /* Label above value instead of a two-column grid that can overflow. */
+  .emails-meta {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0.75rem 1rem;
+  }
+
+  .emails-meta dt {
+    padding-bottom: 0;
+    font-size: 0.75rem;
+  }
+
+  .emails-meta dd {
+    padding-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Row actions: comfortable thumb targets. */
+  .users-row-actions button,
+  .categories-actions button,
+  .categories-actions a[role="button"] {
+    padding-block: 0.6rem;
+  }
+
+  .users-row-actions button {
+    flex: 1 1 0;
+  }
+
+  .emails-filter input[type="month"] {
+    width: 100%;
+  }
+}
+
+/* Native pickers anchor their popup to the input's box. An input wider
+   than the viewport (or a flex item refusing to shrink) pushes the
+   calendar off-screen, so cap the box and theme the popup. */
+input[type="month"],
+input[type="date"],
+input[type="datetime-local"] {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  color-scheme: dark;
+}
+
+@media (max-width: 640px) {
+  input[type="month"],
+  input[type="date"],
+  input[type="datetime-local"] {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

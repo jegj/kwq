@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { join } from 'node:path';
 import fastifyCookie from '@fastify/cookie';
+import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -40,9 +41,16 @@ async function bootstrap() {
   await app.register(fastifyView, {
     engine: { ejs },
     root: join(import.meta.dirname, 'views'),
-    defaultContext: { fmt: { formatMoney, formatDateTime, formatInputValue, titleCase } },
+    defaultContext: {
+      fmt: { formatMoney, formatDateTime, formatInputValue, titleCase },
+      assetVersion: Date.now(),
+    },
   });
   await app.register(fastifyCookie);
+  await app.register(fastifyStatic, {
+    root: join(import.meta.dirname, 'public'),
+    prefix: '/assets/',
+  });
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
