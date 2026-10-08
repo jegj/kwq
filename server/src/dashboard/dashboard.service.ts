@@ -98,6 +98,12 @@ function deltaPercent(total: number, previousTotal: number): number | null {
   return Math.round(((total - previousTotal) / previousTotal) * 1000) / 10;
 }
 
+function requireMonthRange(month: string): { gte: Date; lt: Date } {
+  const range = monthRange(month);
+  if (!range) throw new Error(`Invalid month: ${month}`);
+  return range;
+}
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly repository: DashboardRepository) {}
@@ -105,9 +111,11 @@ export class DashboardService {
   getMonthNav(requested: string | undefined, now = new Date()): MonthNav {
     const current = currentMonthIn(APP_TIMEZONE, now);
 
-    const match = requested ? MONTH_PATTERN.exec(requested) : null;
+    const requestedMonth =
+      requested && MONTH_PATTERN.test(requested) ? requested : null;
     // Same-length YYYY-MM strings compare chronologically.
-    const month = match && requested! <= current ? requested! : current;
+    const month =
+      requestedMonth && requestedMonth <= current ? requestedMonth : current;
 
     const [year, monthNumber] = month.split('-').map(Number);
     const next = formatMonth(year, monthNumber);
@@ -129,8 +137,8 @@ export class DashboardService {
     month: string,
   ): Promise<CurrencySummary[]> {
     const [year, monthNumber] = month.split('-').map(Number);
-    const range = monthRange(month)!;
-    const previousRange = monthRange(formatMonth(year, monthNumber - 2))!;
+    const range = requireMonthRange(month);
+    const previousRange = requireMonthRange(formatMonth(year, monthNumber - 2));
     const [
       current,
       previous,

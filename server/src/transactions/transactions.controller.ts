@@ -212,11 +212,15 @@ export class TransactionsController {
   }
 
   private toData(body: TransactionDto) {
+    const transactionDate = parseInputValue(APP_TIMEZONE, body.transactionDate);
+    if (!transactionDate) {
+      throw new BadRequestException('Invalid transaction date.');
+    }
     return {
       amount: body.amount,
       currency: body.currency,
       merchant: body.merchant,
-      transactionDate: parseInputValue(APP_TIMEZONE, body.transactionDate)!,
+      transactionDate,
       description: body.description ?? null,
       cardLastFour: body.cardLastFour ?? null,
       operationNumber: body.operationNumber ?? null,

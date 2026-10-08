@@ -1,4 +1,12 @@
-import { Controller, Get, Query, Render, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Render,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/guard/session.guard.js';
 import { DashboardService } from './dashboard.service.js';
@@ -14,9 +22,11 @@ export class DashboardController {
     @Req() request: FastifyRequest,
     @Query('month') month?: string,
   ) {
+    // SessionGuard guarantees a user; this narrows the type without `!`.
+    if (!request.user) throw new UnauthorizedException();
     const monthNav = this.dashboardService.getMonthNav(month);
     const summaries = await this.dashboardService.getSummaries(
-      request.user!.id,
+      request.user.id,
       monthNav.month,
     );
     return {
