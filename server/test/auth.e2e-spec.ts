@@ -14,6 +14,8 @@ describe('AuthController (e2e)', () => {
       builder.overrideProvider(AuthService).useValue({
         validateUser: (email: string, password: string) =>
           validateUser(email, password),
+        recordLogin: async () => undefined,
+        recordLogout: async () => undefined,
       }),
     );
   });
