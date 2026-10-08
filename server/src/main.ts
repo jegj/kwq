@@ -13,6 +13,7 @@ import ejs from 'ejs';
 import { Logger } from 'nestjs-pino';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { RedirectExceptionFilter } from './auth/redirect/redirect.exception.js';
+import { createAssetUrl } from './common/asset-url.util.js';
 import {
   formatDateTime,
   formatInputValue,
@@ -43,7 +44,9 @@ async function bootstrap() {
     root: join(import.meta.dirname, 'views'),
     defaultContext: {
       fmt: { formatMoney, formatDateTime, formatInputValue, titleCase },
-      assetVersion: Date.now(),
+      asset: createAssetUrl(
+        join(import.meta.dirname, 'public', 'manifest.json'),
+      ),
     },
   });
   await app.register(fastifyCookie);
