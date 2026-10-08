@@ -258,9 +258,6 @@ filtering on lists for v1 (exception: `/app/emails` cursor + `month`).
 
 ## Open follow-ups (not yet decided)
 
-- `kwq_watcher` needs to change from a single global `sharedSecret`/
-  `webhookUrl` to sending the per-user `X-Kwq-Token` header (see Auth
-  implementation above) once accounts exist.
 - Invite-link UX details (expiry, password policy) for the CLI/seed script
   path — the web admin creation flow is now decided (see URL design above).
 - Webhook endpoint hardening (rate limiting, payload size limits) — not
