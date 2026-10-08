@@ -1,4 +1,5 @@
 import { OperationType } from '@prisma/client';
+import { APP_TIMEZONE, zonedToUtc } from '../../../common/timezone.util.js';
 import type { GmailWebhookDto } from '../../dto/email-webhook.dto.js';
 import {
   type BankParser,
@@ -26,11 +27,6 @@ const SPANISH_MONTHS: Record<string, number> = {
   noviembre: 10,
   diciembre: 11,
 };
-
-// ponytail: bank's "Fecha y hora" has no timezone in it, always Lima local.
-// Hardcoded since Peru has no DST; move to a shared constant if a second
-// Peru-bank parser needs the same offset.
-const LIMA_UTC_OFFSET_HOURS = 5;
 
 function matchField(body: string, pattern: RegExp): string | null {
   return body.match(pattern)?.[1]?.trim() ?? null;
@@ -78,14 +74,14 @@ function parseTransactionDate(body: string): Date {
   let hour = Number(hourStr) % 12;
   if (meridiem.toUpperCase() === 'PM') hour += 12;
 
-  return new Date(
-    Date.UTC(
-      Number(year),
-      month,
-      Number(day),
-      hour + LIMA_UTC_OFFSET_HOURS,
-      Number(minute),
-    ),
+  // The bank's "Fecha y hora" carries no zone: it is local to APP_TIMEZONE.
+  return zonedToUtc(
+    APP_TIMEZONE,
+    Number(year),
+    month,
+    Number(day),
+    hour,
+    Number(minute),
   );
 }
 
