@@ -1,18 +1,18 @@
-import { Controller, Get, Query, Render, Req, UseGuards } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
-import { SessionGuard } from '../auth/guard/session.guard.js';
-import { DashboardService } from './dashboard.service.js';
+import { Controller, Get, Query, Render, Req, UseGuards } from "@nestjs/common";
+import type { FastifyRequest } from "fastify";
+import { SessionGuard } from "../auth/guard/session.guard.js";
+import { DashboardService } from "./dashboard.service.js";
 
-@Controller('app')
+@Controller("app")
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
-  @Get('dashboard')
+  @Get("dashboard")
   @UseGuards(SessionGuard)
-  @Render('app-layout')
+  @Render("app-layout")
   async getDashboard(
     @Req() request: FastifyRequest,
-    @Query('month') month?: string,
+    @Query("month") month?: string,
   ) {
     const monthNav = this.dashboardService.getMonthNav(month);
     const summaries = await this.dashboardService.getSummaries(
@@ -20,8 +20,8 @@ export class DashboardController {
       monthNav.month,
     );
     return {
-      title: 'Dashboard',
-      page: './pages/dashboard',
+      title: "Dashboard",
+      page: "./pages/dashboard",
       email: request.user?.email,
       role: request.user?.role,
       currentPath: request.url,

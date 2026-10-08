@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service.js";
 
 export interface CurrencyTotal {
   currency: string;
@@ -12,6 +12,11 @@ export interface CategoryTotal {
   name: string | null;
   color: string | null;
   total: number;
+}
+
+export interface UncategorizedCount {
+  currency: string;
+  count: number;
 }
 
 export interface TransactionRow {
@@ -32,7 +37,7 @@ export class DashboardRepository {
     range: { gte: Date; lt: Date },
   ): Promise<CurrencyTotal[]> {
     const groups = await this.prisma.transaction.groupBy({
-      by: ['currency'],
+      by: ["currency"],
       where: { userId, transactionDate: range },
       _sum: { amount: true },
       _count: true,
@@ -49,7 +54,7 @@ export class DashboardRepository {
     range: { gte: Date; lt: Date },
   ): Promise<CategoryTotal[]> {
     const groups = await this.prisma.transaction.groupBy({
-      by: ['currency', 'categoryId'],
+      by: ["currency", "categoryId"],
       where: { userId, transactionDate: range },
       _sum: { amount: true },
     });
@@ -75,6 +80,20 @@ export class DashboardRepository {
         total: Number(group._sum.amount ?? 0),
       };
     });
+  }
+
+  uncategorizedCounts(
+    userId: string,
+    range: { gte: Date; lt: Date },
+  ): Promise<UncategorizedCount[]> {
+    return this.prisma.$queryRaw<UncategorizedCount[]>`
+      SELECT currency, count(*)::int AS count
+      FROM transaction
+      WHERE user_id = ${userId}::uuid
+        AND transaction_date >= ${range.gte}
+        AND transaction_date < ${range.lt}
+        AND category_id IS NULL
+      GROUP BY currency`;
   }
 
   // ponytail: bucketed per Lima day and ranked in JS; move to SQL if a month ever holds thousands of rows
