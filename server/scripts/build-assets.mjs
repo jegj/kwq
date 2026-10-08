@@ -1,3 +1,4 @@
+import { rmSync } from 'node:fs';
 import { build, context } from 'esbuild';
 
 const watch = process.argv.includes('--watch');
@@ -13,6 +14,9 @@ const options = {
   outdir: 'dist/public',
   logLevel: 'info',
 };
+
+// Start clean so stale files (old sourcemaps, renamed entries) never ship.
+rmSync(options.outdir, { recursive: true, force: true });
 
 if (!watch) {
   await build(options);

@@ -145,15 +145,16 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
 
 ## UI
 
-- **CSS**: Pico.css, slate color-theme variant, loaded via version-pinned CDN
-  `<link>`. Dark-only — hardcoded `data-theme="dark"` on `<html>` (no
-  light/dark toggle, no `prefers-color-scheme` fallback).
-- **JS**: Alpine.js, loaded via version-pinned CDN `<script>`. No bundler/npm
-  package — matches the CSS's zero-build-step approach.
+- **CSS**: Pico.css (slate variant) bundled from npm (`@picocss/pico`, exact
+  version) together with our own styles — no CDN. Dark-only — hardcoded
+  `data-theme="dark"` on `<html>` (no light/dark toggle, no
+  `prefers-color-scheme` fallback).
+- **JS**: Alpine.js and Chart.js bundled from npm (exact versions), not CDN.
 - **Templates**: full layout wrapper (`views/layout.ejs`) that owns
-  `<html>/<head>/<body>` (Pico + Alpine CDN tags, structural header/footer),
-  pulling in each page via a dynamic include — `<%- include(page) %>`, where
-  `page` is passed as a render local from the controller per request.
+  `<html>/<head>/<body>` (header/footer; asset tags live in
+  `partials/head.ejs`), pulling in each page via a dynamic include —
+  `<%- include(page) %>`, where `page` is passed as a render local from the
+  controller per request.
 - **Nav/footer**: structural chrome only for now (no nav links) — nothing
   else exists to link to yet; add real nav items once a second page lands.
 - **Responsive**: pages must render usably on phones. Pico's fluid
@@ -164,16 +165,45 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
 
   ```
   views/
-    layout.ejs          (shell: CDN tags, header/footer, <%- include(page) %>)
+    layout.ejs          (shell: header/footer, <%- include(page) %>)
     app-layout.ejs      (shell for /app/* pages, includes layout.ejs)
     partials/
-      head.ejs           (<head> contents, included by layout.ejs)
+      head.ejs           (<head>: title + /assets links, included by layout.ejs)
     pages/
       login.ejs           (page markup only, no <html>/<head> of its own)
   ```
 
 - `login.ejs` moves under `views/pages/` and is stripped down to just the
   form markup, losing its own `<html>/<head>/<body>`.
+
+## Frontend assets
+
+- Source lives in `server/assets/` (outside `src/`, so `nest build` ignores
+  it); `server/scripts/build-assets.mjs` (esbuild) bundles it into
+  `server/dist/public/`, served by `@fastify/static` at `/assets/`.
+  - `assets/css/main.css` imports Pico, then `base`, `components`,
+    `responsive`, `polish`, `dashboard` — order matters (`polish.css`
+    overrides earlier rules and must stay last).
+  - `assets/js/app.js` registers every Alpine component
+    (`assets/js/components/*.js`) via `Alpine.data()` before
+    `Alpine.start()`. Templates reference them by name:
+    `x-data="categoryManager"`. Server data goes in as arguments:
+    `x-data="dashboard(<%= JSON.stringify(summaries) %>)"`. Trivial
+    one-liner state (`{ open: false }`) stays inline.
+  - `assets/js/dashboard.js` is a separate entry (Chart.js + the dashboard
+    component), loaded only by `dashboard.ejs` so other pages skip it.
+- Templates link files as `/assets/<file>?v=<%= assetVersion %>`;
+  `assetVersion` is a server-start timestamp set in the view
+  `defaultContext` (`main.ts` and `test/bootstrap.ts`).
+- Commands (inside `server/`): `npm run build:assets` (minified, cleans
+  `dist/public` first), `npm run build:assets:watch` (unminified +
+  sourcemaps), `npm run build` (`rm -rf dist` + `nest build` + assets;
+  copy `dist/` to the deploy box). `npm run start:dev` runs the asset
+  watcher next to `nest start --watch` — no live reload, refresh manually.
+- `nest-cli.json` has `deleteOutDir: false` so Nest doesn't wipe
+  `dist/public`; `build` cleans `dist` (and `tsconfig.build.tsbuildinfo`,
+  otherwise `tsc` skips emitting) itself.
+- `npm run lint` also covers `assets/js` and `scripts/`.
 
 ## URL design
 
