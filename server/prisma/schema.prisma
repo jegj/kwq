@@ -46,7 +46,7 @@ model EmailNotification {
   id            String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
   userId        String       @db.Uuid @map("user_id")
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messageId     String       @unique @map("message_id")
+  messageId     String       @map("message_id")
   fromAddress   String       @map("from_address")
   subject       String
   body          String
@@ -59,6 +59,7 @@ model EmailNotification {
   createdAt     DateTime     @db.Timestamptz(3) @default(now()) @map("created_at")
   updatedAt     DateTime     @db.Timestamptz(3) @updatedAt @map("updated_at")
 
+  @@unique([userId, messageId])
   @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
   @@map("email_notification")
 }

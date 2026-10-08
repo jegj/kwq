@@ -93,13 +93,13 @@ CREATE UNIQUE INDEX "user_webhook_token_key" ON "user"("webhook_token");
 CREATE UNIQUE INDEX "category_user_id_name_key" ON "category"("user_id", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "email_notification_message_id_key" ON "email_notification"("message_id");
-
--- CreateIndex
 CREATE UNIQUE INDEX "email_notification_transaction_id_key" ON "email_notification"("transaction_id");
 
 -- CreateIndex
 CREATE INDEX "email_notification_user_id_created_at_id_idx" ON "email_notification"("user_id", "created_at" DESC, "id" DESC);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "email_notification_user_id_message_id_key" ON "email_notification"("user_id", "message_id");
 
 -- CreateIndex
 CREATE INDEX "transaction_user_id_transaction_date_idx" ON "transaction"("user_id", "transaction_date");
