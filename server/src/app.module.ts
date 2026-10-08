@@ -37,6 +37,8 @@ const observeImports = isDev
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.LOG_LEVEL ?? (isDev ? 'debug' : 'info'),
+        // Per-request lines only in dev; in prod the reverse proxy's access log covers them.
+        autoLogging: isDev,
         transport: isDev
           ? { target: 'pino-pretty', options: { singleLine: true } }
           : undefined,
