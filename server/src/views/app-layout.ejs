@@ -84,16 +84,7 @@
     <div
       class="toast"
       role="status"
-      x-data="{
-        message: null,
-        init() {
-          try {
-            this.message = sessionStorage.getItem('kwq-toast');
-            sessionStorage.removeItem('kwq-toast');
-          } catch (e) {}
-          if (this.message) setTimeout(() => (this.message = null), 3500);
-        },
-      }"
+      x-data="toast"
       x-show="message"
       x-text="message"
       x-cloak

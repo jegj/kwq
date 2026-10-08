@@ -1,32 +1,5 @@
 <div
-  x-data="{
-    hasToken: <%= hasWebhookToken %>,
-    token: null,
-    confirmOpen: false,
-    generating: false,
-    error: null,
-    async generate() {
-      this.generating = true;
-      this.error = null;
-      try {
-        const response = await fetch('/app/settings/webhook-token', { method: 'POST' });
-        if (response.status === 409) {
-          this.hasToken = true;
-          this.confirmOpen = false;
-          return;
-        }
-        if (!response.ok) throw new Error('request failed');
-        const data = await response.json();
-        this.token = data.token;
-        this.hasToken = true;
-        this.confirmOpen = false;
-      } catch (e) {
-        this.error = 'Something went wrong generating the token. Try again.';
-      } finally {
-        this.generating = false;
-      }
-    },
-  }"
+  x-data="webhookToken(<%= hasWebhookToken %>)"
 >
   <h1>Settings</h1>
 
@@ -90,46 +63,7 @@
   </dialog>
 
   <article
-    x-data="{
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-      saving: false,
-      error: null,
-      success: false,
-      async changePassword() {
-        this.error = null;
-        this.success = false;
-        if (this.newPassword !== this.confirmPassword) {
-          this.error = 'New password and confirmation don\'t match.';
-          return;
-        }
-        this.saving = true;
-        try {
-          const response = await fetch('/app/settings/password', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              currentPassword: this.currentPassword,
-              newPassword: this.newPassword,
-            }),
-          });
-          if (response.status === 401) {
-            this.error = 'Current password is incorrect.';
-            return;
-          }
-          if (!response.ok) throw new Error('request failed');
-          this.success = true;
-          this.currentPassword = '';
-          this.newPassword = '';
-          this.confirmPassword = '';
-        } catch (e) {
-          this.error = 'Something went wrong changing your password. Try again.';
-        } finally {
-          this.saving = false;
-        }
-      },
-    }"
+    x-data="changePassword"
   >
     <header>
       <strong>Change password</strong>

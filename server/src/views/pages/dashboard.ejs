@@ -1,50 +1,5 @@
 <div
-  x-data="{
-    summaries: <%= JSON.stringify(summaries) %>,
-    active: 0,
-    get summary() { return this.summaries[this.active]; },
-    money(value, currency = 'PEN') {
-      const symbols = { PEN: 'S/ ', USD: '$' };
-      return (symbols[currency] ?? currency + ' ') + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    },
-    init() {
-      const muted = '#8b95a7';
-      const trend = new Chart(this.$refs.trend, {
-        type: 'bar',
-        data: { labels: [], datasets: [{ data: [], backgroundColor: '#e08a83', borderRadius: 3 }] },
-        options: {
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: muted } },
-            y: { grid: { color: 'rgba(139,149,167,0.15)' }, ticks: { color: muted }, border: { display: false } },
-          },
-        },
-      });
-      const renderTrend = () => {
-        const daily = this.summary ? this.summary.daily : [];
-        trend.data.labels = daily.map((_, index) => index + 1);
-        trend.data.datasets[0].data = daily;
-        trend.update();
-      };
-      renderTrend();
-      this.$watch('active', renderTrend);
-      const split = new Chart(this.$refs.split, {
-        type: 'doughnut',
-        data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
-        options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } },
-      });
-      const renderSplit = () => {
-        const categories = this.summary ? this.summary.categories : [];
-        split.data.labels = categories.map((category) => category.name);
-        split.data.datasets[0].data = categories.map((category) => category.amount);
-        split.data.datasets[0].backgroundColor = categories.map((category) => category.color);
-        split.update();
-      };
-      renderSplit();
-      this.$watch('active', renderSplit);
-    },
-  }"
+  x-data="dashboard(<%= JSON.stringify(summaries) %>)"
 >
   <div class="dash-head">
     <h1>Dashboard</h1>
@@ -152,4 +107,4 @@
   </section>
 </div>
 
-<script src="/assets/charts.js?v=<%= assetVersion %>"></script>
+<script src="/assets/dashboard.js?v=<%= assetVersion %>"></script>

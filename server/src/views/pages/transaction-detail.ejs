@@ -1,4 +1,4 @@
-<div x-data="transactionForm(true)">
+<div x-data="transactionForm(true, <%- JSON.stringify(fmt.formatInputValue(new Date())) %>)">
   <div class="categories-header">
     <h1><%= fmt.titleCase(transaction.merchant) %></h1>
     <div class="categories-actions">

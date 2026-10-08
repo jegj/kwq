@@ -33,6 +33,7 @@ export async function createTestApp(
   await app.register(fastifyView, {
     engine: { ejs },
     root: join(import.meta.dirname, '../src/views'),
+    defaultContext: { assetVersion: 'test' },
   });
   await app.register(fastifyCookie);
   await app.init();

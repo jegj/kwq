@@ -5,7 +5,7 @@ const options = {
   entryPoints: [
     { in: 'assets/css/main.css', out: 'app' },
     { in: 'assets/js/app.js', out: 'app' },
-    { in: 'assets/js/charts.js', out: 'charts' },
+    { in: 'assets/js/dashboard.js', out: 'dashboard' },
   ],
   bundle: true,
   minify: !watch,
