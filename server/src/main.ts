@@ -30,6 +30,7 @@ async function bootstrap() {
     },
   );
   app.useLogger(app.get(Logger));
+  app.enableShutdownHooks();
   app.useGlobalFilters(
     new RedirectExceptionFilter(),
     new NotFoundExceptionFilter(),
