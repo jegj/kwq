@@ -190,6 +190,9 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
     `x-data="categoryManager"`. Server data goes in as arguments:
     `x-data="dashboard(<%= JSON.stringify(summaries) %>)"`. Trivial
     one-liner state (`{ open: false }`) stays inline.
+    `components/crud-dialog.js` is the shared add/edit/delete dialog logic
+    behind `category-manager.js` and `user-manager.js`; new list-page
+    dialogs should call `crudDialog({...})` instead of copying it.
   - `assets/js/dashboard.js` is a separate entry (Chart.js + the dashboard
     component), loaded only by `dashboard.ejs` so other pages skip it.
 - Templates link files as `/assets/<file>?v=<%= assetVersion %>`;
