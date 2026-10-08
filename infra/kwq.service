@@ -1,0 +1,75 @@
+# Install (as root, on the server):
+#   cp infra/kwq.service /etc/systemd/system/kwq.service
+#   systemctl daemon-reload && systemctl enable --now kwq
+# Logs:   journalctl -u kwq -f        (raw pino JSON: add -o cat)
+# Audit:  systemd-analyze security kwq
+# Needs:  user `kwq`, code in /opt/kwq (built: server/dist), env in /etc/kwq/kwq.env (root:root, 0600)
+
+[Unit]
+Description=KWQ (Qhawaq) server
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+# Crash loop stops after 5 failed starts in 60s instead of spinning forever
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=kwq
+Group=kwq
+WorkingDirectory=/opt/kwq/server
+EnvironmentFile=/etc/kwq/kwq.env
+Environment=NODE_ENV=production
+# Keep V8's heap under MemoryMax so Node GCs before the cgroup OOM-kills it
+Environment=NODE_OPTIONS=--max-old-space-size=384
+ExecStart=/usr/bin/node dist/main
+
+# Restart / shutdown (app calls enableShutdownHooks, so SIGTERM closes cleanly)
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+SendSIGKILL=yes
+
+# Logging -> journald (retention is a journald.conf setting)
+SyslogIdentifier=kwq
+StandardOutput=journal
+StandardError=journal
+
+# Resource limits, sized for a 2GB box shared with Postgres + the reverse proxy
+MemoryHigh=400M
+MemoryMax=512M
+TasksMax=256
+LimitNOFILE=65536
+# Under system-wide memory pressure the OOM killer picks this app before Postgres
+OOMScoreAdjust=300
+
+# Hardening. MemoryDenyWriteExecute is deliberately NOT set: V8's JIT needs W+X pages.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
