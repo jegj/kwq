@@ -1,9 +1,9 @@
-import { Injectable } from "@nestjs/common";
-import { monthRange } from "../common/pagination.util.js";
+import { Injectable } from '@nestjs/common';
+import { monthRange } from '../common/pagination.util.js';
 import {
   DashboardRepository,
   type TransactionRow,
-} from "./dashboard.repository.js";
+} from './dashboard.repository.js';
 
 export interface MonthNav {
   month: string;
@@ -48,22 +48,22 @@ export interface CurrencySummary {
   uncategorized: number;
 }
 
-const UNCATEGORIZED = "Uncategorized";
-const UNCATEGORIZED_COLOR = "#8b95a7";
+const UNCATEGORIZED = 'Uncategorized';
+const UNCATEGORIZED_COLOR = '#8b95a7';
 const FALLBACK_COLORS = [
-  "#e08a83",
-  "#7aa2f7",
-  "#e0af68",
-  "#73daca",
-  "#bb9af7",
-  "#9ece6a",
+  '#e08a83',
+  '#7aa2f7',
+  '#e0af68',
+  '#73daca',
+  '#bb9af7',
+  '#9ece6a',
 ];
 
 const LIST_SIZE = 5;
-const dateLabel = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  timeZone: "America/Lima",
+const dateLabel = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'America/Lima',
 });
 
 const MONTH_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])$/;
@@ -73,7 +73,7 @@ const LIMA_UTC_OFFSET_MS = 5 * 60 * 60 * 1000;
 function formatMonth(year: number, monthIndex: number): string {
   // Date.UTC normalises overflow, so monthIndex -1 / 12 wrap the year.
   const date = new Date(Date.UTC(year, monthIndex, 1));
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 function currentMonth(now: Date): string {
@@ -82,7 +82,7 @@ function currentMonth(now: Date): string {
 }
 
 function daysInMonth(month: string): number {
-  const [year, monthNumber] = month.split("-").map(Number);
+  const [year, monthNumber] = month.split('-').map(Number);
   return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
 }
 
@@ -101,23 +101,6 @@ function dailyTotals(
   return perDay.map((value) => Math.round(value * 100) / 100);
 }
 
-function topMerchants(rows: TransactionRow[]): MerchantTotal[] {
-  const totals = new Map<string, MerchantTotal>();
-  for (const row of rows) {
-    const entry = totals.get(row.merchant) ?? {
-      merchant: row.merchant,
-      amount: 0,
-      count: 0,
-    };
-    entry.amount = Math.round((entry.amount + row.amount) * 100) / 100;
-    entry.count += 1;
-    totals.set(row.merchant, entry);
-  }
-  return [...totals.values()]
-    .sort((first, second) => second.amount - first.amount)
-    .slice(0, LIST_SIZE);
-}
-
 @Injectable()
 export class DashboardService {
   constructor(private readonly repository: DashboardRepository) {}
@@ -129,14 +112,14 @@ export class DashboardService {
     // Same-length YYYY-MM strings compare chronologically.
     const month = match && requested! <= current ? requested! : current;
 
-    const [year, monthNumber] = month.split("-").map(Number);
+    const [year, monthNumber] = month.split('-').map(Number);
     const next = formatMonth(year, monthNumber);
     return {
       month,
-      label: new Intl.DateTimeFormat("en-US", {
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
+      label: new Intl.DateTimeFormat('en-US', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
       }).format(new Date(Date.UTC(year, monthNumber - 1, 1))),
       prev: formatMonth(year, monthNumber - 2),
       next: month === current ? null : next,
@@ -148,16 +131,23 @@ export class DashboardService {
     userId: string,
     month: string,
   ): Promise<CurrencySummary[]> {
-    const [year, monthNumber] = month.split("-").map(Number);
+    const [year, monthNumber] = month.split('-').map(Number);
     const previousMonth = formatMonth(year, monthNumber - 2);
-    const [current, previous, categoryRows, currentAmounts, uncategorizedRows] =
-      await Promise.all([
-        this.repository.totalsByCurrency(userId, monthRange(month)!),
-        this.repository.totalsByCurrency(userId, monthRange(previousMonth)!),
-        this.repository.totalsByCategory(userId, monthRange(month)!),
-        this.repository.transactionsInRange(userId, monthRange(month)!),
-        this.repository.uncategorizedCounts(userId, monthRange(month)!),
-      ]);
+    const [
+      current,
+      previous,
+      categoryRows,
+      currentAmounts,
+      uncategorizedRows,
+      merchantRows,
+    ] = await Promise.all([
+      this.repository.totalsByCurrency(userId, monthRange(month)!),
+      this.repository.totalsByCurrency(userId, monthRange(previousMonth)!),
+      this.repository.totalsByCategory(userId, monthRange(month)!),
+      this.repository.transactionsInRange(userId, monthRange(month)!),
+      this.repository.uncategorizedCounts(userId, monthRange(month)!),
+      this.repository.topMerchants(userId, monthRange(month)!, LIST_SIZE),
+    ]);
 
     const previousTotals = new Map(
       previous.map((row) => [row.currency, row.total]),
@@ -219,7 +209,13 @@ export class DashboardService {
             .sort((first, second) => second.amount - first.amount)
             .slice(0, LIST_SIZE)
             .map(toItem),
-          topMerchants: topMerchants(rows),
+          topMerchants: merchantRows
+            .filter((row) => row.currency === currency)
+            .map(({ merchant, amount, count }) => ({
+              merchant,
+              amount,
+              count,
+            })),
           uncategorized: uncategorizedByCurrency.get(currency) ?? 0,
         };
       })

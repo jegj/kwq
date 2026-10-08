@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service.js";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface CurrencyTotal {
   currency: string;
@@ -16,6 +16,13 @@ export interface CategoryTotal {
 
 export interface UncategorizedCount {
   currency: string;
+  count: number;
+}
+
+export interface MerchantTotalRow {
+  currency: string;
+  merchant: string;
+  amount: number;
   count: number;
 }
 
@@ -37,7 +44,7 @@ export class DashboardRepository {
     range: { gte: Date; lt: Date },
   ): Promise<CurrencyTotal[]> {
     const groups = await this.prisma.transaction.groupBy({
-      by: ["currency"],
+      by: ['currency'],
       where: { userId, transactionDate: range },
       _sum: { amount: true },
       _count: true,
@@ -54,7 +61,7 @@ export class DashboardRepository {
     range: { gte: Date; lt: Date },
   ): Promise<CategoryTotal[]> {
     const groups = await this.prisma.transaction.groupBy({
-      by: ["currency", "categoryId"],
+      by: ['currency', 'categoryId'],
       where: { userId, transactionDate: range },
       _sum: { amount: true },
     });
@@ -94,6 +101,33 @@ export class DashboardRepository {
         AND transaction_date < ${range.lt}
         AND category_id IS NULL
       GROUP BY currency`;
+  }
+
+  topMerchants(
+    userId: string,
+    range: { gte: Date; lt: Date },
+    limit: number,
+  ): Promise<MerchantTotalRow[]> {
+    return this.prisma.$queryRaw<MerchantTotalRow[]>`
+      SELECT currency, merchant, amount, count
+      FROM (
+        SELECT
+          currency,
+          merchant,
+          round(sum(amount), 2)::float8 AS amount,
+          count(*)::int AS count,
+          row_number() OVER (
+            PARTITION BY currency
+            ORDER BY sum(amount) DESC, merchant
+          ) AS rank
+        FROM transaction
+        WHERE user_id = ${userId}::uuid
+          AND transaction_date >= ${range.gte}
+          AND transaction_date < ${range.lt}
+        GROUP BY currency, merchant
+      ) ranked
+      WHERE rank <= ${limit}
+      ORDER BY currency, rank`;
   }
 
   // ponytail: bucketed per Lima day and ranked in JS; move to SQL if a month ever holds thousands of rows
