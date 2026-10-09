@@ -28,6 +28,12 @@ const SPANISH_MONTHS: Record<string, number> = {
   diciembre: 11,
 };
 
+// BCP sends other operations (transfers, service payments) from the same
+// sender; only card consumptions are tracked.
+const CONSUMPTION_SUBJECT =
+  /Realizaste un consumo con tu Tarjeta de (Débito|Crédito) BCP/i;
+const CONSUMPTION_BODY = /Consumo Tarjeta de (Débito|Crédito)/i;
+
 function matchField(body: string, pattern: RegExp): string | null {
   return body.match(pattern)?.[1]?.trim() ?? null;
 }
@@ -89,7 +95,11 @@ export class BcpParser implements BankParser {
   readonly name = 'bcp';
 
   canParse(email: GmailWebhookDto): boolean {
-    return email.subject.includes('BCP');
+    // Keep in sync with BANKS.bcp.shouldTrack in kwq_watcher/banks.gs.
+    return (
+      CONSUMPTION_SUBJECT.test(email.subject) ||
+      CONSUMPTION_BODY.test(email.body)
+    );
   }
 
   parse(email: GmailWebhookDto): ParsedTransaction {

@@ -33,6 +33,38 @@ describe('BcpParser', () => {
     });
   });
 
+  describe('canParse', () => {
+    const base = loadFixture('bcp-consumo');
+    const withSubject = (subject: string, body = 'sin datos') => ({
+      ...base,
+      subject,
+      body,
+    });
+
+    it.each([
+      'Realizaste un consumo con tu Tarjeta de Débito BCP - Servicio de Notificaciones BCP',
+      'Fwd: Realizaste un consumo con tu Tarjeta de Crédito BCP - Servicio de Notificaciones BCP',
+    ])('accepts consumption subject: %s', (subject) => {
+      expect(parser.canParse(withSubject(subject))).toBe(true);
+    });
+
+    it('accepts a consumption body even when the subject differs', () => {
+      const email = withSubject(
+        'Otro asunto',
+        'Operación realizada *Consumo Tarjeta de Débito*',
+      );
+
+      expect(parser.canParse(email)).toBe(true);
+    });
+
+    it.each([
+      'Constancia de Transferencia a cuentas propias o a terceros - BCP',
+      'ENVIO AUTOMATICO - CONSTANCIA DE PAGO DE SERVICIO - BANCA POR INTERNET BCP',
+    ])('rejects non-consumption operation: %s', (subject) => {
+      expect(parser.canParse(withSubject(subject))).toBe(false);
+    });
+  });
+
   it('parses a PEN (S/) credit card consumption email', () => {
     const email = loadFixture('bcp-consumo-pen');
 
@@ -67,7 +99,11 @@ describe('BcpParser', () => {
   });
 
   it('does not claim an unrelated email', () => {
-    const email = { ...loadFixture('bcp-consumo'), subject: 'Hello there' };
+    const email = {
+      ...loadFixture('bcp-consumo'),
+      subject: 'Hello there',
+      body: 'nothing relevant',
+    };
 
     expect(parser.canParse(email)).toBe(false);
   });
