@@ -22,6 +22,15 @@ export class HooksService {
   async receiveEmail(userId: string, email: GmailWebhookDto): Promise<void> {
     const parser = this.parserRegistry.find(email);
 
+    if (!parser) {
+      this.logger.warn({
+        msg: 'No parser matched the email, storing it as UNPARSED',
+        messageId: email.messageId,
+        from: email.from,
+        subject: email.subject,
+      });
+    }
+
     let parsed: ParsedTransaction | null = null;
     if (parser) {
       try {
