@@ -1,0 +1,11 @@
+{
+  "messageId": "bcp-transferencia",
+  "threadId": "1a0c96d7f0e9a2de",
+  "receivedAt": "2026-09-29T12:23:35.000Z",
+  "from": "Servicio de Notificaciones BCP <notificaciones@notificacionesbcp.com.pe>",
+  "to": "\"jegj57@gmail.com\" <jegj57@gmail.com>",
+  "subject": "Constancia de Transferencia a cuentas propias o a terceros - BCP",
+  "body": "Hola *Javier Eduardo,*\r\n\r\nRealizaste una transferencia desde tu cuenta.\r\n\r\n*Datos de la operación*\r\n\r\nOperación realizada *Transferencia a terceros*\r\nMonto transferido *S/ 150.00*\r\nFecha y hora *22 de setiembre de 2026 - 06:45 PM*\r\nNúmero de operación *0000123456*\r\n\r\nEl BCP nunca te solicitará datos confidenciales por correo.\r\n",
+  "bodyHtml": "<div>Hola *Javier Eduardo,*<br><br>Realizaste una transferencia desde tu cuenta.<br><br>*Datos de la operación*<br><br>Operación realizada *Transferencia a terceros*<br>Monto transferido *S/ 150.00*<br>Fecha y hora *22 de setiembre de 2026 - 06:45 PM*<br>Número de operación *0000123456*</div>",
+  "attachments": []
+}

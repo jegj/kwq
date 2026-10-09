@@ -65,6 +65,24 @@ describe('BcpParser', () => {
     });
   });
 
+  it('parses a debit card consumption email, including the card number', () => {
+    const email = loadFixture('bcp-consumo-debito');
+
+    expect(parser.canParse(email)).toBe(true);
+    expect(parser.parse(email)).toMatchObject({
+      operationType: 'DEBIT',
+      operationDescription: 'Consumo Tarjeta de Débito',
+      cardLastFour: '2468',
+    });
+  });
+
+  it.each(['skipped/bcp-transferencia', 'skipped/bcp-pago-servicio'])(
+    'skips a non-consumption operation: %s',
+    (name) => {
+      expect(parser.canParse(loadFixture(name))).toBe(false);
+    },
+  );
+
   it('parses a PEN (S/) credit card consumption email', () => {
     const email = loadFixture('bcp-consumo-pen');
 

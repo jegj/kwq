@@ -121,7 +121,7 @@ export class BcpParser implements BankParser {
     );
     const cardLastFour = matchField(
       body,
-      /N[uú]mero de Tarjeta de Cr[eé]dito \*+(\d{4})\*/,
+      /N[uú]mero de Tarjeta de (?:Cr[eé]dito|D[eé]bito) \*+(\d{4})\*/,
     );
 
     return {

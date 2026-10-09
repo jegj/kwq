@@ -1,0 +1,11 @@
+{
+  "messageId": "bcp-pago-servicio",
+  "threadId": "1a0c96d7f0e9a2de",
+  "receivedAt": "2026-09-29T12:23:35.000Z",
+  "from": "Servicio de Notificaciones BCP <notificaciones@notificacionesbcp.com.pe>",
+  "to": "\"jegj57@gmail.com\" <jegj57@gmail.com>",
+  "subject": "ENVIO AUTOMATICO - CONSTANCIA DE PAGO DE SERVICIO - BANCA POR INTERNET BCP",
+  "body": "Hola *Javier Eduardo,*\r\n\r\nPagaste un servicio por Banca por Internet.\r\n\r\n*Datos de la operación*\r\n\r\nServicio *LUZ DEL SUR*\r\nMonto pagado *S/ 98.40*\r\nFecha y hora *22 de setiembre de 2026 - 06:45 PM*\r\nNúmero de operación *0000654321*\r\n\r\nEl BCP nunca te solicitará datos confidenciales por correo.\r\n",
+  "bodyHtml": "<div>Hola *Javier Eduardo,*<br><br>Pagaste un servicio por Banca por Internet.<br><br>*Datos de la operación*<br><br>Servicio *LUZ DEL SUR*<br>Monto pagado *S/ 98.40*<br>Fecha y hora *22 de setiembre de 2026 - 06:45 PM*<br>Número de operación *0000654321*</div>",
+  "attachments": []
+}
