@@ -17,12 +17,13 @@ function checkMail() {
 
   try {
     const seen = loadSeen();
-    const messages = findNewMessages(seen);
-    console.log(`Found ${messages.length} new message(s).`);
-    messages.forEach(m => {
+    const { fresh, skipped } = findNewMessages(seen);
+    console.log(`Found ${fresh.length} new message(s), skipped ${skipped.length}.`);
+    skipped.forEach(m => seen.add(m.getId()));
+    fresh.forEach(m => {
       if (postToWebhook(m)) seen.add(m.getId());
     });
-    if (messages.length) saveSeen(seen);
+    if (fresh.length || skipped.length) saveSeen(seen);
   } finally {
     lock.releaseLock();
   }

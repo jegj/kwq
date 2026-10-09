@@ -12,20 +12,24 @@ function saveSeen(seen) {
     .setProperty('seenIds', JSON.stringify(trimmed));
 }
 
-function isWatchedSender(message) {
+function findBank(message) {
   const from = message.getFrom().toLowerCase();
-  return CONFIG.senders.some(s => from.includes(s.toLowerCase()));
+  return BANKS.find(b => b.senders.some(s => from.includes(s.toLowerCase())));
 }
 
+// fresh: messages to POST. skipped: watched-sender messages the bank's
+// shouldTrack rejected; the caller marks them seen so they're not re-checked.
 function findNewMessages(seen) {
   const threads = GmailApp.search(buildGmailSearchQuery(), 0, CONFIG.maxThreads);
   const fresh = [];
+  const skipped = [];
   threads.forEach(thread => {
     thread.getMessages().forEach(message => {
       if (seen.has(message.getId())) return;
-      if (!isWatchedSender(message)) return;   // skip your own replies
-      fresh.push(message);
+      const bank = findBank(message);
+      if (!bank) return;   // skip your own replies
+      (bank.shouldTrack(message) ? fresh : skipped).push(message);
     });
   });
-  return fresh.sort((a, b) => a.getDate() - b.getDate());
+  return { fresh: fresh.sort((a, b) => a.getDate() - b.getDate()), skipped };
 }

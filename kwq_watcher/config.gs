@@ -1,5 +1,4 @@
 const CONFIG = {
-  senders: ['notificaciones@notificacionesbcp.com.pe', 'servicioalcliente@netinterbank.com.pe', 'notificaciones@pe.notificaciones.bancofalabella.com', 'javiergalarza4@gmail.com'],
   webhookUrl: 'https://encounter-ridge-buildings-windsor.trycloudflare.com',
   webhookToken: '1a892301-63cf-46e0-b6be-18da2672ccc8',  // sent as X-Kwq-Token
   lookbackWindow: '2d',   // only search recent mail; keeps runs fast
@@ -15,6 +14,7 @@ const CONFIG = {
 };
 
 function buildGmailSearchQuery() {
-  const clauses = CONFIG.senders.map(s => `from:${s}`).join(' OR ');
+  const senders = BANKS.flatMap(b => b.senders);
+  const clauses = senders.map(s => `from:${s}`).join(' OR ');
   return `(${clauses}) newer_than:${CONFIG.lookbackWindow}`;
 }
