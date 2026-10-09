@@ -49,8 +49,6 @@ Edit the `CONFIG` block in `config.gs`:
 
 ```javascript
 const CONFIG = {
-  webhookUrl: 'https://your-server/hooks/email',
-  webhookToken: 'your-per-user-token',   // sent as X-Kwq-Token
   lookbackWindow: '2d',                  // how far back each run searches
   maxThreads: 25,                        // per-run safety cap
   maxSeenIds: 400,
@@ -59,6 +57,11 @@ const CONFIG = {
   dryRun: true,                          // flip to false to actually POST
 };
 ```
+
+Then set the secrets in the editor under Project Settings → Script properties:
+
+- `WEBHOOK_URL`: e.g. `https://your-server/hooks/email`
+- `WEBHOOK_TOKEN`: your per-user token, sent as `X-Kwq-Token`
 
 ## Run
 

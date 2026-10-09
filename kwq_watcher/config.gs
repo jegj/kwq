@@ -1,6 +1,13 @@
+// Secrets live in Script Properties (Project Settings), not in code.
+function requireProperty(key) {
+  const value = PropertiesService.getScriptProperties().getProperty(key);
+  if (!value) throw new Error(`Missing script property ${key}`);
+  return value;
+}
+
 const CONFIG = {
-  webhookUrl: 'https://encounter-ridge-buildings-windsor.trycloudflare.com',
-  webhookToken: '1a892301-63cf-46e0-b6be-18da2672ccc8',  // sent as X-Kwq-Token
+  get webhookUrl() { return requireProperty('WEBHOOK_URL'); },
+  get webhookToken() { return requireProperty('WEBHOOK_TOKEN'); },  // sent as X-Kwq-Token
   lookbackWindow: '2d',   // only search recent mail; keeps runs fast
   maxThreads: 25,         // safety cap per run
   // Properties caps at 9KB per value; 500 IDs as JSON overflows it.
