@@ -1,7 +1,7 @@
 const CONFIG = {
-  senders: ['notificaciones@notificacionesbcp.com.pe', 'servicioalcliente@netinterbank.com.pe', 'javiergalarza4@gmail.com'],
-  webhookUrl: 'https://your-server/hooks/email',
-  webhookToken: 'paste-your-per-user-token-here',  // sent as X-Kwq-Token
+  senders: ['notificaciones@notificacionesbcp.com.pe', 'servicioalcliente@netinterbank.com.pe', 'notificaciones@pe.notificaciones.bancofalabella.com', 'javiergalarza4@gmail.com'],
+  webhookUrl: 'https://encounter-ridge-buildings-windsor.trycloudflare.com',
+  webhookToken: '1a892301-63cf-46e0-b6be-18da2672ccc8',  // sent as X-Kwq-Token
   lookbackWindow: '2d',   // only search recent mail; keeps runs fast
   maxThreads: 25,         // safety cap per run
   // Properties caps at 9KB per value; 500 IDs as JSON overflows it.
