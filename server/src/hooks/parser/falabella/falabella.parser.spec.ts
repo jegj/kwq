@@ -37,6 +37,42 @@ describe('FalabellaParser', () => {
     expect(parser.canParse(email)).toBe(false);
   });
 
+  it('does not claim a Falabella email that is not a CMR consumption', () => {
+    const email = {
+      ...loadFixture('falabella-consumo-pen'),
+      subject: 'Alerta de seguridad',
+      body: 'Cambiaste tu clave',
+    };
+
+    expect(parser.canParse(email)).toBe(false);
+  });
+
+  it('claims a forwarded email by its subject', () => {
+    const email = {
+      ...loadFixture('falabella-consumo-pen'),
+      subject: 'Fwd: Notificación de Operaciones CMR',
+      body: 'sin detalle',
+    };
+
+    expect(parser.canParse(email)).toBe(true);
+  });
+
+  it('claims an email by its body when the subject is mangled', () => {
+    const email = {
+      ...loadFixture('falabella-consumo-pen'),
+      subject: 'Fwd: algo distinto',
+      body: 'se ha realizado un consumo con tu\nTarjeta CMR, te adjuntamos',
+    };
+
+    expect(parser.canParse(email)).toBe(true);
+  });
+
+  it('does not claim a CMR subject from another sender', () => {
+    const email = { ...loadFixture('falabella-consumo-pen'), from: 'a@b.com' };
+
+    expect(parser.canParse(email)).toBe(false);
+  });
+
   it('throws ParseError when a required field is missing', () => {
     const email = { ...loadFixture('falabella-consumo-pen'), body: 'nope' };
 

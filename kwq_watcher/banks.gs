@@ -18,7 +18,11 @@ const BANKS = [
   {
     name: 'falabella',
     senders: ['notificaciones@pe.notificaciones.bancofalabella.com'],
-    shouldTrack: () => true,
+    // Only CMR consumptions; the body check covers forwards with a mangled subject.
+    // Keep in sync with FalabellaParser.canParse on the server.
+    shouldTrack: m =>
+      /Notificación de Operaciones CMR/i.test(m.getSubject()) ||
+      /consumo\s+con\s+tu\s+Tarjeta\s+CMR/i.test(m.getPlainBody()),
   },
   {
     // Forwarding inbox for any bank: find the original bank by its sender

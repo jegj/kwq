@@ -29,6 +29,12 @@ const SPANISH_MONTHS: Record<string, number> = {
   diciembre: 11,
 };
 
+// Falabella also sends other notifications from the same sender; only CMR
+// consumptions are tracked. The body check covers forwards with a mangled
+// subject (the bank wraps lines, hence \s+).
+const CMR_SUBJECT = /Notificación de Operaciones CMR/i;
+const CMR_BODY = /consumo\s+con\s+tu\s+Tarjeta\s+CMR/i;
+
 function matchField(body: string, label: string): string | null {
   return body.match(new RegExp(`^${label}: (.+)$`, 'm'))?.[1]?.trim() ?? null;
 }
@@ -76,7 +82,9 @@ export class FalabellaParser implements BankParser {
   readonly name = 'falabella';
 
   canParse(email: GmailWebhookDto): boolean {
-    return email.from.toLowerCase().includes('bancofalabella');
+    if (!email.from.toLowerCase().includes('bancofalabella')) return false;
+    // Keep in sync with BANKS.falabella.shouldTrack in kwq_watcher/banks.gs.
+    return CMR_SUBJECT.test(email.subject) || CMR_BODY.test(email.body);
   }
 
   parse(email: GmailWebhookDto): ParsedTransaction {
@@ -88,7 +96,7 @@ export class FalabellaParser implements BankParser {
       currency,
       merchant: requireField(body, 'Comercio'),
       operationDescription: null,
-      // ponytail: only CMR (credit) emails seen so far
+      // canParse only lets CMR (credit card) emails through
       operationType: OperationType.CREDIT,
       operationNumber: matchField(body, 'Número de operación'),
       cardLastFour:
