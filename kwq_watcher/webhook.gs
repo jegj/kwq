@@ -7,7 +7,7 @@ function buildPayload(message) {
     to: message.getTo(),
     subject: message.getSubject(),
     body: message.getPlainBody().slice(0, CONFIG.bodyCharLimit),
-    bodyHtml: message.getBody().slice(0, CONFIG.bodyCharLimit),
+    bodyHtml: message.getBody().slice(0, CONFIG.bodyHtmlCharLimit),
     attachments: message.getAttachments().map(a => ({
       name: a.getName(), size: a.getSize(), contentType: a.getContentType()
     })),

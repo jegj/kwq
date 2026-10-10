@@ -24,7 +24,7 @@ describe('InterbankParser', () => {
       currency: 'USD',
       merchant: 'AMAZON WEB SERVICES',
       operationDescription: null,
-      operationType: 'UNKNOWN',
+      operationType: 'DEBIT',
       operationNumber: null,
       cardLastFour: '215',
       transactionDate: new Date('2026-10-01T21:14:00.000Z'),
@@ -41,8 +41,43 @@ describe('InterbankParser', () => {
     expect(transaction.amount).toBe('1234.50');
   });
 
-  it('does not claim an unrelated email', () => {
-    const email = { ...loadFixture('interbank-consumo-usd'), from: 'a@b.com' };
+  it('parses a recurring payment email (S/. amount)', () => {
+    const email = loadFixture('interbank-pago-recurrente-pen');
+
+    expect(parser.canParse(email)).toBe(true);
+    expect(parser.parse(email)).toEqual({
+      amount: '257.51',
+      currency: 'PEN',
+      merchant: 'INTERSEGURO COMPANIA D',
+      operationDescription: null,
+      operationType: 'DEBIT',
+      operationNumber: null,
+      cardLastFour: '215',
+      transactionDate: new Date('2026-09-20T18:56:00.000Z'),
+    });
+  });
+
+  it('parses a Plin payment constancia', () => {
+    const email = loadFixture('interbank-plin-pen');
+
+    expect(parser.canParse(email)).toBe(true);
+    expect(parser.parse(email)).toEqual({
+      amount: '48.00',
+      currency: 'PEN',
+      merchant: 'Sandra S Coello S',
+      operationDescription: 'Plin a Yape',
+      operationType: 'DEBIT',
+      operationNumber: '52330634',
+      cardLastFour: null,
+      transactionDate: new Date('2026-09-29T16:12:00.000Z'),
+    });
+  });
+
+  it.each([
+    'Tu estado de cuenta Interbank está listo',
+    'Javier, aprovecha esta promo con tu Tarjeta',
+  ])('does not claim an untracked subject: %s', (subject) => {
+    const email = { ...loadFixture('interbank-consumo-usd'), subject };
 
     expect(parser.canParse(email)).toBe(false);
   });

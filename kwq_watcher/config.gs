@@ -16,6 +16,7 @@ const CONFIG = {
   // ID can still be inside the search window and get POSTed again as "new".
   maxSeenIds: 400,
   bodyCharLimit: 10000,
+  bodyHtmlCharLimit: 100000,  // HTML carries lots of head/CSS before the text (Interbank: ~9.5k)
   pollMinutes: 5,         // 1, 5, 10, 15 or 30
   dryRun: false,           // flip to false to actually POST
 };

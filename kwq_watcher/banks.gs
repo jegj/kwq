@@ -13,7 +13,11 @@ const BANKS = [
   {
     name: 'interbank',
     senders: ['servicioalcliente@netinterbank.com.pe'],
-    shouldTrack: () => true,
+    // Only card consumptions/recurring payments and Plin constancias.
+    // Keep in sync with InterbankParser.canParse on the server.
+    shouldTrack: m =>
+      /se ha realizado un pago recurrente a tu Tarjeta|realizaste un consumo con tu Tarjeta|Constancia de Pago Plin/i
+        .test(m.getSubject()),
   },
   {
     name: 'falabella',

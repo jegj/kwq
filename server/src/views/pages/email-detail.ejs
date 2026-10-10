@@ -14,7 +14,14 @@
   <% } %>
 </dl>
 
-<% if (notification.bodyHtml) { %>
+<%
+  // ponytail: truncated HTML can be all <head>/CSS with no text; fall back to plain body then.
+  const hasVisibleHtml = notification.bodyHtml
+    .replace(/<(head|style|script)[\s\S]*?(<\/\1>|$)/gi, '')
+    .replace(/<[^>]*>?/g, '')
+    .trim() !== '';
+%>
+<% if (hasVisibleHtml) { %>
 <%# ponytail: sandbox="" blocks scripts/forms/same-origin; the CSP meta is a second layer. Remote images stay allowed (bank logos), so tracking pixels load too. %>
 <%
   const cspMeta = `<meta http-equiv="Content-Security-Policy" content="script-src 'none'; object-src 'none'; form-action 'none'">`;

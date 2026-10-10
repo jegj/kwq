@@ -53,6 +53,7 @@ const CONFIG = {
   maxThreads: 25,                        // per-run safety cap
   maxSeenIds: 400,
   bodyCharLimit: 10000,
+  bodyHtmlCharLimit: 100000,
   pollMinutes: 5,                        // 1, 5, 10, 15 or 30
   dryRun: true,                          // flip to false to actually POST
 };
