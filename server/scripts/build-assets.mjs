@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { build, context } from 'esbuild';
 
 const watch = process.argv.includes('--watch');
@@ -41,6 +41,9 @@ const options = {
 
 // Start clean so stale files (old sourcemaps, renamed entries) never ship.
 rmSync(options.outdir, { recursive: true, force: true });
+
+// Static images (favicon) are served as-is at /assets/.
+cpSync('assets/img', OUTDIR, { recursive: true });
 
 if (!watch) {
   await build(options);
