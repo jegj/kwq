@@ -2,6 +2,7 @@ import {
   type ArgumentsHost,
   Catch,
   type ExceptionFilter,
+  HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
@@ -20,6 +21,13 @@ export class HooksExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const request = host.switchToHttp().getRequest<FastifyRequest>();
     const reply = host.switchToHttp().getResponse<FastifyReply>();
+
+    // Deliberate HTTP errors (401 bad token, 400 bad payload) keep their
+    // status; only unexpected errors become a retryable 500.
+    if (exception instanceof HttpException) {
+      reply.status(exception.getStatus()).send(exception.getResponse());
+      return;
+    }
 
     this.logger.error({
       msg: 'Unhandled error in hooks webhook',
