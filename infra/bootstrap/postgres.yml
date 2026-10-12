@@ -1,12 +1,11 @@
 ---
 # Configure PostgreSQL for kwq (run after provision.yml has installed it). Idempotent.
-#   ansible-playbook postgres.yml --ask-vault-pass
+#   ansible-playbook postgres.yml
 - name: Configure PostgreSQL
   hosts: kwq
   become: true
   vars_files:
     - vars.yml
-    - secrets.yml
 
   tasks:
     - name: Bind PostgreSQL to localhost only
@@ -14,6 +13,36 @@
         dest: "/etc/postgresql/{{ kwq_postgres_version }}/main/conf.d/10-kwq.conf"
         content: |
           listen_addresses = 'localhost'
+        owner: postgres
+        group: postgres
+        mode: "0644"
+      notify: Restart postgresql
+      tags: app
+
+    # Sized for 2GB RAM / 1 vCPU / 60GB SSD shared with Caddy (~50MB) and the Node app
+    # (MemoryMax=512M): Postgres gets roughly 600-700MB total, the rest is OS page cache.
+    - name: Tune PostgreSQL for a small shared box
+      ansible.builtin.copy:
+        dest: "/etc/postgresql/{{ kwq_postgres_version }}/main/conf.d/20-kwq-tuning.conf"
+        content: |
+          # Memory
+          shared_buffers = 256MB
+          effective_cache_size = 768MB
+          work_mem = 4MB
+          maintenance_work_mem = 64MB
+          # Prisma pool is small; each connection costs RAM
+          max_connections = 30
+          # Parallelism: pointless on 1 vCPU
+          max_worker_processes = 4
+          max_parallel_workers_per_gather = 0
+          max_parallel_maintenance_workers = 0
+          # Storage: SSD, plenty of disk for WAL
+          random_page_cost = 1.1
+          effective_io_concurrency = 200
+          min_wal_size = 256MB
+          max_wal_size = 2GB
+          # Log slow queries (goes to journald)
+          log_min_duration_statement = 500
         owner: postgres
         group: postgres
         mode: "0644"
@@ -31,21 +60,114 @@
       ansible.builtin.meta: flush_handlers
       tags: app
 
-    - name: Create database role
+    # Two roles, neither has a password: they log in over the Unix socket with peer auth.
+    #   kwq_migrator: owns the database + schema, runs `prisma migrate deploy` (DDL)
+    #   kwq:          what the app runs as (kwq OS user, see app.yml), data access only (DML)
+    - name: Create migrator role
       community.postgresql.postgresql_user:
-        name: "{{ kwq_db_user }}"
-        password: "{{ kwq_db_password }}"
+        name: "{{ kwq_db_migrator_user }}"
+        role_attr_flags: NOSUPERUSER,NOCREATEDB,NOCREATEROLE
       become: true
       become_user: postgres
-      no_log: true
+      tags: app
+
+    - name: Create app role
+      community.postgresql.postgresql_user:
+        name: "{{ kwq_db_user }}"
+        role_attr_flags: NOSUPERUSER,NOCREATEDB,NOCREATEROLE
+      become: true
+      become_user: postgres
       tags: app
 
     - name: Create database
       community.postgresql.postgresql_db:
         name: "{{ kwq_db_name }}"
-        owner: "{{ kwq_db_user }}"
+        owner: "{{ kwq_db_migrator_user }}"
       become: true
       become_user: postgres
+      tags: app
+
+    # By default any role may connect to any database
+    - name: Revoke default CONNECT on the database from everyone
+      community.postgresql.postgresql_privs:
+        login_db: "{{ kwq_db_name }}"
+        type: database
+        objs: "{{ kwq_db_name }}"
+        privs: CONNECT
+        roles: PUBLIC
+        state: absent
+      become: true
+      become_user: postgres
+      tags: app
+
+    - name: Grant CONNECT on the database to the app role
+      community.postgresql.postgresql_privs:
+        login_db: "{{ kwq_db_name }}"
+        type: database
+        objs: "{{ kwq_db_name }}"
+        privs: CONNECT
+        roles: "{{ kwq_db_user }}"
+      become: true
+      become_user: postgres
+      tags: app
+
+    - name: Grant schema usage to the app role
+      community.postgresql.postgresql_privs:
+        login_db: "{{ kwq_db_name }}"
+        type: schema
+        objs: public
+        privs: USAGE
+        roles: "{{ kwq_db_user }}"
+      become: true
+      become_user: postgres
+      tags: app
+
+    # Tables/sequences the migrator creates later are readable/writable by the app automatically
+    - name: Default table privileges for the app role
+      community.postgresql.postgresql_privs:
+        login_db: "{{ kwq_db_name }}"
+        type: default_privs
+        schema: public
+        objs: TABLES
+        privs: SELECT,INSERT,UPDATE,DELETE
+        target_roles: "{{ kwq_db_migrator_user }}"
+        roles: "{{ kwq_db_user }}"
+      become: true
+      become_user: postgres
+      tags: app
+
+    - name: Default sequence privileges for the app role
+      community.postgresql.postgresql_privs:
+        login_db: "{{ kwq_db_name }}"
+        type: default_privs
+        schema: public
+        objs: SEQUENCES
+        privs: USAGE,SELECT
+        target_roles: "{{ kwq_db_migrator_user }}"
+        roles: "{{ kwq_db_user }}"
+      become: true
+      become_user: postgres
+      tags: app
+
+    # Peer auth maps OS user -> DB role by name; this lets the admin user (who deploys) act as the
+    # migrator without a password. Must sit before the default `local all all peer` line.
+    - name: Map admin OS user to the migrator role
+      ansible.builtin.blockinfile:
+        path: /etc/postgresql/{{ kwq_postgres_version }}/main/pg_ident.conf
+        marker: "# {mark} ANSIBLE MANAGED kwq migrator"
+        block: |
+          kwq_migrator  {{ ansible_user }}  {{ kwq_db_migrator_user }}
+      notify: Reload postgresql
+      tags: app
+
+    - name: Allow the mapped admin user to connect as the migrator
+      ansible.builtin.blockinfile:
+        path: /etc/postgresql/{{ kwq_postgres_version }}/main/pg_hba.conf
+        marker: "# {mark} ANSIBLE MANAGED kwq migrator"
+        insertbefore: '^local\s+all\s+all\s+peer'
+        block: |
+          local  {{ kwq_db_name }}  {{ kwq_db_migrator_user }}  peer map=kwq_migrator
+      notify: Reload postgresql
       tags: app
 
   handlers:
@@ -53,3 +175,8 @@
       ansible.builtin.systemd_service:
         name: postgresql
         state: restarted
+
+    - name: Reload postgresql
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: reloaded

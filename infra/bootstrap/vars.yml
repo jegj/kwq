@@ -2,7 +2,10 @@
 # Public domain Caddy serves (DNS A/AAAA must point at the box for TLS to issue)
 kwq_domain: kwq.example.com
 kwq_db_name: kwq
+# Must equal the OS user the service runs as (kwq): the app uses socket peer auth, no DB password
 kwq_db_user: kwq
+# Owns the database, runs migrations (DDL); the admin user acts as it via a pg_ident map
+kwq_db_migrator_user: kwq_migrator
 kwq_postgres_version: 18
 kwq_node_major: 24
 kwq_swap_size: 2G

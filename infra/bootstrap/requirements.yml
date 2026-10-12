@@ -2,4 +2,6 @@
 collections:
   - name: ansible.posix
   - name: community.general
+  # >= 5: older releases query pg_database.daticulocale, renamed datlocale in PostgreSQL 17
   - name: community.postgresql
+    version: ">=5.0.0"
