@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AuthService } from './auth.service.js';
-import { hashPassword } from './util/password.util.js';
+import { hashPassword, verifyPassword } from './util/password.util.js';
+
+vi.mock('./util/password.util.js', async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import('./util/password.util.js')>();
+  return { ...original, verifyPassword: vi.fn(original.verifyPassword) };
+});
 
 function makePrismaStub(user: unknown) {
   return {
@@ -46,6 +52,16 @@ describe('AuthService', () => {
 
     expect(result).toBeNull();
     expect(prisma.userActivity.create).not.toHaveBeenCalled();
+  });
+
+  it('still verifies a password for an unknown email so timing does not reveal it', async () => {
+    vi.mocked(verifyPassword).mockClear();
+    const authService = new AuthService(makePrismaStub(null) as any);
+
+    await authService.validateUser('nobody@example.com', 'whatever');
+
+    expect(verifyPassword).toHaveBeenCalledTimes(1);
+    expect(verifyPassword).toHaveBeenCalledWith('whatever', expect.any(String));
   });
 
   it('returns null for the wrong password', async () => {

@@ -3,6 +3,11 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { AuthenticatedUser } from './types/auth.types.js';
 import { verifyPassword } from './util/password.util.js';
 
+// Well-formed scrypt hash (16-byte salt, 64-byte key) that matches no password.
+// Verified against when the email is unknown, so that path costs the same as a
+// wrong password and response time doesn't reveal which emails have accounts.
+const DUMMY_PASSWORD_HASH = `${'0'.repeat(32)}:${'0'.repeat(128)}`;
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -15,6 +20,7 @@ export class AuthService {
   ): Promise<AuthenticatedUser | null> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
+      await verifyPassword(password, DUMMY_PASSWORD_HASH);
       this.logger.warn({ msg: 'Login failed: unknown email', email });
       return null;
     }
