@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import fastifyCookie from '@fastify/cookie';
+import fastifyHelmet from '@fastify/helmet';
 import fastifyView from '@fastify/view';
 import { ValidationPipe } from '@nestjs/common';
 import {
@@ -11,6 +12,7 @@ import ejs from 'ejs';
 import { AppModule } from '../src/app.module.js';
 import { RedirectExceptionFilter } from '../src/auth/redirect/redirect.exception.js';
 import { NotFoundExceptionFilter } from '../src/common/not-found.filter.js';
+import { helmetOptions } from '../src/common/security-headers.js';
 
 export async function createTestApp(
   configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
@@ -35,6 +37,7 @@ export async function createTestApp(
     root: join(import.meta.dirname, '../src/views'),
     defaultContext: { asset: (name: string) => `/assets/${name}` },
   });
+  await app.register(fastifyHelmet, helmetOptions);
   await app.register(fastifyCookie);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();

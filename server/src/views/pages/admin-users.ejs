@@ -28,12 +28,12 @@
           <button
             type="button"
             class="outline secondary"
-            x-on:click='openEdit(<%- JSON.stringify({ id: user.id, email: user.email, role: user.role }) %>)'
+            x-on:click="openEdit(<%= JSON.stringify({ id: user.id, email: user.email, role: user.role }) %>)"
           >Edit</button>
           <button
             type="button"
             class="outline secondary"
-            x-on:click='openDelete(<%- JSON.stringify({ id: user.id, email: user.email }) %>)'
+            x-on:click="openDelete(<%= JSON.stringify({ id: user.id, email: user.email }) %>)"
           >Delete</button>
         </td>
       </tr>

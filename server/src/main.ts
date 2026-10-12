@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { join } from 'node:path';
 import fastifyCookie from '@fastify/cookie';
+import fastifyHelmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import { ValidationPipe } from '@nestjs/common';
@@ -21,11 +22,13 @@ import {
   titleCase,
 } from './common/format.util.js';
 import { NotFoundExceptionFilter } from './common/not-found.filter.js';
+import { helmetOptions } from './common/security-headers.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    // Explicit (same as Fastify's default): ~110k chars of body+html fit well under it.
+    new FastifyAdapter({ bodyLimit: 1_048_576 }),
     {
       instrument: ObserveInstrument,
       bufferLogs: true,
@@ -49,6 +52,7 @@ async function bootstrap() {
       ),
     },
   });
+  await app.register(fastifyHelmet, helmetOptions);
   await app.register(fastifyCookie);
   await app.register(fastifyStatic, {
     root: join(import.meta.dirname, 'public'),
