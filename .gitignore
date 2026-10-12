@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # IA specs 
 specs/
+
+# Ansible inventory (has the box IP + key path); commit inventory.example.ini instead
+infra/bootstrap/inventory.ini

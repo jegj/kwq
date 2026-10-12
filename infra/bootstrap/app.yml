@@ -1,0 +1,92 @@
+---
+# Configure the kwq app: service user, env file, systemd unit. Idempotent.
+#   ansible-playbook app.yml --ask-vault-pass
+- name: Configure kwq app
+  hosts: kwq
+  become: true
+  vars_files:
+    - vars.yml
+    - secrets.yml
+
+  tasks:
+    # Lets the "Restart kwq if running" handler know the current state
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+      tags: app
+
+    - name: Create kwq service user
+      ansible.builtin.user:
+        name: kwq
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+      tags: app
+
+    # Admin user deploys dist/ here; kwq only reads
+    - name: Create app directory
+      ansible.builtin.file:
+        path: /opt/kwq
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: kwq
+        mode: "0750"
+      tags: app
+
+    - name: Create env directory
+      ansible.builtin.file:
+        path: /etc/kwq
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      tags: app
+
+    - name: Write kwq env file
+      ansible.builtin.copy:
+        dest: /etc/kwq/kwq.env
+        content: |
+          NODE_ENV=production
+          APP_ENV=production
+          PUBLIC_URL=https://{{ kwq_domain }}
+          APP_TIMEZONE={{ kwq_app_timezone }}
+          DATABASE_URL="postgresql://{{ kwq_db_user }}:{{ kwq_db_password }}@localhost:5432/{{ kwq_db_name }}?schema=public"
+          JWT_SECRET={{ kwq_jwt_secret }}
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+      notify: Restart kwq if running
+      tags: app
+
+    - name: Install kwq systemd unit
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../kwq.service"
+        dest: /etc/systemd/system/kwq.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd
+      tags: app
+
+    - name: Flush handlers so systemd sees the unit before enabling it
+      ansible.builtin.meta: flush_handlers
+      tags: app
+
+    # Enabled but not started: dist/ isn't deployed yet
+    - name: Enable kwq service
+      ansible.builtin.systemd_service:
+        name: kwq
+        enabled: true
+      tags: app
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    # Only restarts if already running, so the first run doesn't start it without dist/
+    - name: Restart kwq if running
+      ansible.builtin.systemd_service:
+        name: kwq
+        state: restarted
+      when: ansible_facts['services']['kwq.service']['state'] | default('') == 'running'

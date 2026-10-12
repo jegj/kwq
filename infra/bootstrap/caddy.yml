@@ -1,0 +1,41 @@
+---
+# Configure Caddy as the reverse proxy for kwq. Idempotent.
+#   ansible-playbook caddy.yml
+- name: Configure Caddy
+  hosts: kwq
+  become: true
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Configure Caddy
+      ansible.builtin.copy:
+        dest: /etc/caddy/Caddyfile
+        content: |
+          {{ kwq_domain }} {
+              encode zstd gzip
+
+              @assets path /assets/*
+              header @assets >Cache-Control "public, max-age=31536000, immutable"
+
+              reverse_proxy localhost:3000
+          }
+        owner: root
+        group: caddy
+        mode: "0640"
+        validate: caddy validate --adapter caddyfile --config %s
+      notify: Reload caddy
+      tags: caddy
+
+    - name: Enable Caddy
+      ansible.builtin.systemd_service:
+        name: caddy
+        enabled: true
+        state: started
+      tags: caddy
+
+  handlers:
+    - name: Reload caddy
+      ansible.builtin.systemd_service:
+        name: caddy
+        state: reloaded

@@ -1,0 +1,55 @@
+---
+# Configure PostgreSQL for kwq (run after provision.yml has installed it). Idempotent.
+#   ansible-playbook postgres.yml --ask-vault-pass
+- name: Configure PostgreSQL
+  hosts: kwq
+  become: true
+  vars_files:
+    - vars.yml
+    - secrets.yml
+
+  tasks:
+    - name: Bind PostgreSQL to localhost only
+      ansible.builtin.copy:
+        dest: "/etc/postgresql/{{ kwq_postgres_version }}/main/conf.d/10-kwq.conf"
+        content: |
+          listen_addresses = 'localhost'
+        owner: postgres
+        group: postgres
+        mode: "0644"
+      notify: Restart postgresql
+      tags: app
+
+    - name: Enable PostgreSQL
+      ansible.builtin.systemd_service:
+        name: postgresql
+        enabled: true
+        state: started
+      tags: app
+
+    - name: Flush handlers so PostgreSQL is configured before creating the database
+      ansible.builtin.meta: flush_handlers
+      tags: app
+
+    - name: Create database role
+      community.postgresql.postgresql_user:
+        name: "{{ kwq_db_user }}"
+        password: "{{ kwq_db_password }}"
+      become: true
+      become_user: postgres
+      no_log: true
+      tags: app
+
+    - name: Create database
+      community.postgresql.postgresql_db:
+        name: "{{ kwq_db_name }}"
+        owner: "{{ kwq_db_user }}"
+      become: true
+      become_user: postgres
+      tags: app
+
+  handlers:
+    - name: Restart postgresql
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: restarted

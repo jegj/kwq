@@ -1,0 +1,48 @@
+---
+# Public domain Caddy serves (DNS A/AAAA must point at the box for TLS to issue)
+kwq_domain: kwq.example.com
+kwq_db_name: kwq
+kwq_db_user: kwq
+kwq_postgres_version: 18
+kwq_node_major: 24
+kwq_swap_size: 2G
+kwq_journal_max_use: 500M
+# Zone of the bank emails (server/.env APP_TIMEZONE)
+kwq_app_timezone: America/Lima
+# Server clock is UTC, so 09:00 = 04:00 America/Lima
+kwq_reboot_time: "09:00"
+
+# Services a stock Vultr image may ship that this box doesn't need (skipped if absent)
+kwq_unused_services:
+  - snapd.service
+  - ModemManager.service
+  - multipathd.service
+  - avahi-daemon.service
+  - cups.service
+  - cups-browsed.service
+  - rpcbind.service
+  - postfix.service
+
+kwq_sysctl:
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.default.accept_source_route: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  net.ipv6.conf.default.accept_source_route: 0
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.conf.default.log_martians: 1
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+  net.ipv4.tcp_syncookies: 1
+  kernel.kptr_restrict: 2
+  kernel.dmesg_restrict: 1
+  fs.protected_hardlinks: 1
+  fs.protected_symlinks: 1
+  fs.suid_dumpable: 0
