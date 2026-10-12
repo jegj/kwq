@@ -7,6 +7,9 @@ function makePrismaStub(user: unknown) {
     user: {
       findUnique: vi.fn().mockResolvedValue(user),
     },
+    userActivity: {
+      create: vi.fn().mockResolvedValue({}),
+    },
   };
 }
 
@@ -42,6 +45,7 @@ describe('AuthService', () => {
     );
 
     expect(result).toBeNull();
+    expect(prisma.userActivity.create).not.toHaveBeenCalled();
   });
 
   it('returns null for the wrong password', async () => {
@@ -58,6 +62,23 @@ describe('AuthService', () => {
     );
 
     expect(result).toBeNull();
+    expect(prisma.userActivity.create).toHaveBeenCalledWith({
+      data: { userId: 'user-1', action: 'LOGIN_FAILED' },
+    });
+  });
+
+  it('does not record activity for a successful validation', async () => {
+    const prisma = makePrismaStub({
+      id: 'user-1',
+      role: 'USER',
+      email: 'javier@example.com',
+      passwordHash: await hashPassword('correct-horse'),
+    });
+    const authService = new AuthService(prisma as any);
+
+    await authService.validateUser('javier@example.com', 'correct-horse');
+
+    expect(prisma.userActivity.create).not.toHaveBeenCalled();
   });
 
   describe('findSessionUser', () => {
