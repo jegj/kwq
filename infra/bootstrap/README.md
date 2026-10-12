@@ -33,9 +33,32 @@ ansible-playbook caddy.yml
 - Subset: add `--tags ssh|firewall|fail2ban|upgrades|base|app|caddy`.
 - Lint: `./lint.sh` (needs `ansible-lint`)
 
+## Database roles and migrations
+
+No role has a password: everything connects over the Unix socket (`/var/run/postgresql`) with peer auth.
+
+| Role | Used by | Can do |
+| --- | --- | --- |
+| `postgres` | admin | everything (`sudo -u postgres psql`) |
+| `kwq_migrator` (`kwq_db_migrator_user`) | you, deploying | owns the `kwq` database, DDL (create/alter tables) |
+| `kwq` (`kwq_db_user`) | the app (`kwq.service`) | `SELECT/INSERT/UPDATE/DELETE` on tables the migrator creates |
+
+Run as the migrator (your admin user, e.g. `linuxuser`, is mapped to `kwq_migrator` via `pg_ident`, only for the `kwq` database):
+
+```
+psql -U kwq_migrator -d kwq                  # interactive shell
+DATABASE_URL="postgresql://kwq_migrator@/kwq?host=/var/run/postgresql&schema=public" \
+  npx prisma migrate deploy                  # from /opt/kwq/server
+```
+
+- Always run migrations as `kwq_migrator`, never as `kwq`: the app role can't create tables, and tables created by another role aren't covered by the app's default privileges.
+- The app keeps using `kwq` (its `DATABASE_URL` is in `/etc/kwq/kwq.env`).
+- The mapping applies to the user in `inventory.ini` (`ansible_user`). Other OS users can't act as the migrator.
+- Check the setup: `psql -U kwq_migrator -d kwq -c '\conninfo'` should connect without a password prompt, and `psql -U kwq_migrator -d postgres` should be refused.
+- Unverified: whether Prisma's migrate CLI accepts the `host=` socket URL. Test it on the first deploy.
+
 ## After provisioning
 
 - `kwq.service` is enabled but not started. Deploy `dist/` to `/opt/kwq` (see the root `CLAUDE.md`), then `sudo systemctl start kwq`.
-- Run migrations as the migrator role (the admin user is mapped to it, no password): `DATABASE_URL="postgresql://kwq_migrator@/kwq?host=/var/run/postgresql&schema=public" npx prisma migrate deploy`. The app itself runs as the `kwq` role (data access only).
 - Automatic reboot after updates runs at 04:00 America/Lima (09:00 UTC).
 - Node, Postgres and Caddy come from third-party repos, so unattended-upgrades does not patch them automatically.
