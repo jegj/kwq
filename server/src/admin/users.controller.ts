@@ -56,7 +56,7 @@ export class UsersController {
         data: {
           email: body.email,
           role: body.role,
-          passwordHash: hashPassword(body.password),
+          passwordHash: await hashPassword(body.password),
         },
         select: { id: true, email: true, role: true, createdAt: true },
       });

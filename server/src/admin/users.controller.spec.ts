@@ -41,9 +41,9 @@ describe('UsersController', () => {
 
       expect(prisma.user.create).toHaveBeenCalled();
       const createArgs = prisma.user.create.mock.calls[0][0];
-      expect(verifyPassword('password123', createArgs.data.passwordHash)).toBe(
-        true,
-      );
+      expect(
+        await verifyPassword('password123', createArgs.data.passwordHash),
+      ).toBe(true);
       expect(result).toEqual({
         id: 'user-2',
         email: 'new@example.com',

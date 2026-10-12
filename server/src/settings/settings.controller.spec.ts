@@ -70,7 +70,7 @@ describe('SettingsController', () => {
 
   describe('changePassword', () => {
     it('updates the password hash when the current password matches', async () => {
-      const currentHash = hashPassword('old-password');
+      const currentHash = await hashPassword('old-password');
       const prisma = {
         user: {
           findUnique: vi.fn().mockResolvedValue({ passwordHash: currentHash }),
@@ -97,7 +97,9 @@ describe('SettingsController', () => {
         user: {
           findUnique: vi
             .fn()
-            .mockResolvedValue({ passwordHash: hashPassword('old-password') }),
+            .mockResolvedValue({
+              passwordHash: await hashPassword('old-password'),
+            }),
           update: vi.fn(),
         },
       };

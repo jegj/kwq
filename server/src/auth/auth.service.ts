@@ -12,9 +12,15 @@ export class AuthService {
     password: string,
   ): Promise<AuthenticatedUser | null> {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !verifyPassword(password, user.passwordHash)) {
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
       return null;
     }
+    return { id: user.id, role: user.role, email: user.email };
+  }
+
+  async findSessionUser(id: string): Promise<AuthenticatedUser | null> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) return null;
     return { id: user.id, role: user.role, email: user.email };
   }
 

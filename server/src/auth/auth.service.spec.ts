@@ -16,7 +16,7 @@ describe('AuthService', () => {
       id: 'user-1',
       role: 'ADMIN',
       email: 'javier@example.com',
-      passwordHash: hashPassword('correct-horse'),
+      passwordHash: await hashPassword('correct-horse'),
     });
     const authService = new AuthService(prisma as any);
 
@@ -48,7 +48,7 @@ describe('AuthService', () => {
     const prisma = makePrismaStub({
       id: 'user-1',
       role: 'ADMIN',
-      passwordHash: hashPassword('correct-horse'),
+      passwordHash: await hashPassword('correct-horse'),
     });
     const authService = new AuthService(prisma as any);
 
@@ -58,5 +58,34 @@ describe('AuthService', () => {
     );
 
     expect(result).toBeNull();
+  });
+
+  describe('findSessionUser', () => {
+    it('returns the current id, role and email from the database', async () => {
+      const prisma = makePrismaStub({
+        id: 'user-1',
+        role: 'USER',
+        email: 'javier@example.com',
+        passwordHash: 'x',
+      });
+      const authService = new AuthService(prisma as any);
+
+      const result = await authService.findSessionUser('user-1');
+
+      expect(result).toEqual({
+        id: 'user-1',
+        role: 'USER',
+        email: 'javier@example.com',
+      });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+      });
+    });
+
+    it('returns null when the user was deleted', async () => {
+      const authService = new AuthService(makePrismaStub(null) as any);
+
+      expect(await authService.findSessionUser('gone')).toBeNull();
+    });
   });
 });

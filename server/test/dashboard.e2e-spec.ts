@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
+import { AuthService } from '../src/auth/auth.service.js';
 import { signAuthToken } from '../src/auth/util/jwt.util.js';
 import { DashboardService } from '../src/dashboard/dashboard.service.js';
 import { createTestApp } from './bootstrap.js';
@@ -9,15 +10,25 @@ describe('DashboardController (e2e)', () => {
 
   beforeEach(async () => {
     app = await createTestApp((builder) =>
-      builder.overrideProvider(DashboardService).useValue({
-        getMonthNav: () => ({
-          month: '2026-10',
-          label: 'October 2026',
-          prev: '2026-09',
-          next: null,
+      builder
+        .overrideProvider(AuthService)
+        .useValue({
+          findSessionUser: async (id: string) => ({
+            id,
+            role: 'USER',
+            email: 'javier@example.com',
+          }),
+        })
+        .overrideProvider(DashboardService)
+        .useValue({
+          getMonthNav: () => ({
+            month: '2026-10',
+            label: 'October 2026',
+            prev: '2026-09',
+            next: null,
+          }),
+          getSummaries: async () => [],
         }),
-        getSummaries: async () => [],
-      }),
     );
   });
 

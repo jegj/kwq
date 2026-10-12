@@ -8,6 +8,6 @@ import { SessionGuard } from './guard/session.guard.js';
 @Module({
   controllers: [AuthController],
   providers: [AuthService, GuestGuard, SessionGuard, AdminGuard],
-  exports: [SessionGuard, AdminGuard],
+  exports: [AuthService, SessionGuard, AdminGuard],
 })
 export class AuthModule {}

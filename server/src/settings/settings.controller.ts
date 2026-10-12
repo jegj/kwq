@@ -65,12 +65,15 @@ export class SettingsController {
       where: { id: request.user?.id },
       select: { passwordHash: true },
     });
-    if (!user || !verifyPassword(body.currentPassword, user.passwordHash)) {
+    if (
+      !user ||
+      !(await verifyPassword(body.currentPassword, user.passwordHash))
+    ) {
       throw new UnauthorizedException('Current password is incorrect.');
     }
     await this.prisma.user.update({
       where: { id: request.user?.id },
-      data: { passwordHash: hashPassword(body.newPassword) },
+      data: { passwordHash: await hashPassword(body.newPassword) },
     });
     return { success: true };
   }
