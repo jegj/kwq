@@ -51,6 +51,7 @@ describe('AuthController (e2e)', () => {
   it('/auth/login (POST) rejects a request missing the password', async () => {
     await request(app.getHttpServer())
       .post('/auth/login')
+      .set('Origin', 'http://localhost:3000')
       .type('form')
       .send({ email: 'javier@example.com' })
       .expect(400);
@@ -59,6 +60,7 @@ describe('AuthController (e2e)', () => {
   it('/auth/login (POST) rejects a malformed email', async () => {
     await request(app.getHttpServer())
       .post('/auth/login')
+      .set('Origin', 'http://localhost:3000')
       .type('form')
       .send({ email: 'not-an-email', password: 'correct-horse' })
       .expect(400);
@@ -69,6 +71,7 @@ describe('AuthController (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/auth/login')
+      .set('Origin', 'http://localhost:3000')
       .type('form')
       .send({ email: 'javier@example.com', password: 'wrong' })
       .expect(401);
@@ -83,11 +86,29 @@ describe('AuthController (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .post('/auth/login')
+      .set('Origin', 'http://localhost:3000')
       .type('form')
       .send({ email: 'javier@example.com', password: 'correct-horse' })
       .expect(302);
 
     expect(response.headers.location).toBe('/app/dashboard');
     expect(response.headers['set-cookie']?.[0]).toContain('session=');
+  });
+
+  it('/auth/login (POST) rejects a request from another origin', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Origin', 'https://evil.test')
+      .type('form')
+      .send({ email: 'javier@example.com', password: 'correct-horse' })
+      .expect(403);
+  });
+
+  it('/auth/login (POST) rejects a request with no origin', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .type('form')
+      .send({ email: 'javier@example.com', password: 'correct-horse' })
+      .expect(403);
   });
 });

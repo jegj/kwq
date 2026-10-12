@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD, Reflector } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './admin/admin.module.js';
 import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
+import { OriginGuard, resolveAllowedOrigin } from './common/origin.guard.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { EmailsModule } from './emails/emails.module.js';
 import { HooksModule } from './hooks/hooks.module.js';
@@ -30,6 +32,17 @@ const observeImports = isDev
 
 @Module({
   controllers: [AppController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      inject: [Reflector],
+      useFactory: (reflector: Reflector) =>
+        new OriginGuard(
+          reflector,
+          resolveAllowedOrigin(process.env.PUBLIC_URL, process.env.PORT),
+        ),
+    },
+  ],
   imports: [
     // Distributed tracing, auto-correlated logs, request/job metrics, error
     // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com

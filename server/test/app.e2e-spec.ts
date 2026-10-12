@@ -34,4 +34,11 @@ describe('AppController (e2e)', () => {
 
     expect(response.headers.location).toBe('/app/dashboard');
   });
+
+  it('/hooks/email (POST) skips the origin check and rejects a missing token with 401', async () => {
+    await request(app.getHttpServer())
+      .post('/hooks/email')
+      .send({})
+      .expect(401);
+  });
 });

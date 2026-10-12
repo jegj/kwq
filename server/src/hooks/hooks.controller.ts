@@ -8,11 +8,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
+import { SkipOriginCheck } from '../common/skip-origin-check.decorator.js';
 import { GmailWebhookDto } from './dto/email-webhook.dto.js';
 import { WebhookTokenGuard } from './guard/webhook-token.guard.js';
 import { HooksService } from './hooks.service.js';
 import { HooksExceptionFilter } from './hooks-exception.filter.js';
 
+// Called by the gscript with a token, not by a browser, so no Origin header.
+@SkipOriginCheck()
 @Controller('hooks')
 @UseFilters(HooksExceptionFilter)
 export class HooksController {
