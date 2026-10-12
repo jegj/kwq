@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -17,6 +18,7 @@ import { signAuthToken, verifyAuthToken } from './util/jwt.util.js';
 
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // matches the JWT's 7d expiry
+const LOGIN_ATTEMPTS_PER_MINUTE = 5;
 
 @Controller('auth')
 export class AuthController {
@@ -29,7 +31,10 @@ export class AuthController {
     return { title: 'Log in', page: './pages/login' };
   }
 
+  // Per client IP, in memory (resets on restart; fine for a single instance).
   @Post('login')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: LOGIN_ATTEMPTS_PER_MINUTE, ttl: 60_000 } })
   async login(
     @Body() { email, password }: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,

@@ -28,7 +28,12 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     // Explicit (same as Fastify's default): ~110k chars of body+html fit well under it.
-    new FastifyAdapter({ bodyLimit: 1_048_576 }),
+    new FastifyAdapter({
+      bodyLimit: 1_048_576,
+      // Caddy runs on the same box; only trust X-Forwarded-For from loopback so
+      // clients can't spoof their IP past the login throttle.
+      trustProxy: 'loopback',
+    }),
     {
       instrument: ObserveInstrument,
       bufferLogs: true,

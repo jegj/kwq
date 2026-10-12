@@ -111,4 +111,24 @@ describe('AuthController (e2e)', () => {
       .send({ email: 'javier@example.com', password: 'correct-horse' })
       .expect(403);
   });
+
+  it('/auth/login (POST) throttles repeated attempts with a 429', async () => {
+    const attempt = () =>
+      request(app.getHttpServer())
+        .post('/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .type('form')
+        .send({ email: 'javier@example.com', password: 'wrong' });
+
+    for (let count = 0; count < 5; count++) {
+      await attempt().expect(401);
+    }
+    await attempt().expect(429);
+  });
+
+  it('/auth/login (GET) is not throttled', async () => {
+    for (let count = 0; count < 8; count++) {
+      await request(app.getHttpServer()).get('/auth/login').expect(200);
+    }
+  });
 });

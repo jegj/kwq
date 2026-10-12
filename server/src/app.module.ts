@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './admin/admin.module.js';
 import { AppController } from './app.controller.js';
@@ -57,6 +58,8 @@ const observeImports = isDev
           : undefined,
       },
     }),
+    // No global guard: only routes that opt in with ThrottlerGuard are limited.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     PrismaModule,
     AuthModule,
     DashboardModule,
