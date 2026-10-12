@@ -14,6 +14,8 @@ export class CreateCategoryDto {
 
   @IsOptional()
   @IsString()
+  // 16 UTF-16 units: fits ZWJ-sequence emoji (family = 11).
+  @MaxLength(16)
   icon?: string;
 
   @IsOptional()
