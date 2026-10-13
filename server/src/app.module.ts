@@ -27,7 +27,7 @@ const observeImports = isDev
       ObserveModule.forRoot({
         appKey: process.env.OBSERVE_APP_KEY ?? '',
         appSecret: process.env.OBSERVE_APP_SECRET ?? '',
-        serviceId: 'nest-typescript-starter',
+        serviceId: 'kwq',
       }),
     ];
 
