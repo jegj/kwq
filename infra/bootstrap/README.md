@@ -6,7 +6,7 @@ Provisions and hardens the kwq box (Ubuntu 26.04 LTS on Vultr). All playbooks ar
 
 - `provision.yml`: SSH hardening, ufw, fail2ban, sysctl, chrony, AppArmor, unattended-upgrades, swap, journald cap. Installs Node, PostgreSQL and Caddy packages only.
 - `postgres.yml`: tunes and binds PostgreSQL to localhost, creates the `kwq_migrator` (owns the DB, DDL) and `kwq` (app, DML only) roles, both without passwords, and the database. The app connects over the Unix socket with peer auth.
-- `app.yml`: `kwq` service user, `/opt/kwq`, `/etc/kwq/kwq.env`, systemd unit.
+- `app.yml`: `kwq` service user, `/opt/kwq`, `/etc/kwq/kwq.env`, systemd unit. Also builds locally (`npm run build`, aborts before upload if it fails), uploads `dist/` + Prisma, runs `npm ci`, `prisma migrate deploy` as `kwq_migrator`, restarts the service. Redeploy only: `--tags deploy`.
 - `caddy.yml`: Caddyfile (reverse proxy + TLS).
 
 ## Prerequisites
@@ -59,6 +59,6 @@ DATABASE_URL="postgresql://kwq_migrator@/kwq?host=/var/run/postgresql&schema=pub
 
 ## After provisioning
 
-- `kwq.service` is enabled but not started. Deploy `dist/` to `/opt/kwq` (see the root `CLAUDE.md`), then `sudo systemctl start kwq`.
+- `app.yml` starts `kwq.service` after deploying; check with `journalctl -u kwq -f`.
 - Automatic reboot after updates runs at 04:00 America/Lima (09:00 UTC).
 - Node, Postgres and Caddy come from third-party repos, so unattended-upgrades does not patch them automatically.

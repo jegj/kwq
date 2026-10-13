@@ -1,6 +1,5 @@
-# Install (as root, on the server):
-#   cp infra/kwq.service /etc/systemd/system/kwq.service
-#   systemctl daemon-reload && systemctl enable --now kwq
+# Installed by app.yml (ansible-playbook app.yml --ask-vault-pass); manual: cp it to
+#   /etc/systemd/system/kwq.service, then systemctl daemon-reload && systemctl enable --now kwq
 # Logs:   journalctl -u kwq -f        (raw pino JSON: add -o cat)
 # Audit:  systemd-analyze security kwq
 # Needs:  user `kwq`, code in /opt/kwq (built: server/dist), env in /etc/kwq/kwq.env (root:root, 0600)
@@ -14,27 +13,21 @@ StartLimitIntervalSec=60
 StartLimitBurst=5
 
 [Service]
-Type=simple
 User=kwq
 Group=kwq
 WorkingDirectory=/opt/kwq/server
 EnvironmentFile=/etc/kwq/kwq.env
-Environment=NODE_ENV=production
-# Keep V8's heap under MemoryMax so Node GCs before the cgroup OOM-kills it
-Environment=NODE_OPTIONS=--max-old-space-size=384
+# Heap well under MemoryHigh: Node also uses buffers + native memory on top of it
+Environment=NODE_OPTIONS=--max-old-space-size=256
 ExecStart=/usr/bin/node dist/main
 
 # Restart / shutdown (app calls enableShutdownHooks, so SIGTERM closes cleanly)
 Restart=on-failure
 RestartSec=5
-KillSignal=SIGTERM
 TimeoutStopSec=30
-SendSIGKILL=yes
 
 # Logging -> journald (retention is a journald.conf setting)
 SyslogIdentifier=kwq
-StandardOutput=journal
-StandardError=journal
 
 # Resource limits, sized for a 2GB box shared with Postgres + the reverse proxy
 MemoryHigh=400M
@@ -61,6 +54,9 @@ ProtectControlGroups=yes
 ProtectClock=yes
 ProtectHostname=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# Only Caddy (localhost) talks to the app; the Postgres unix socket is unaffected
+IPAddressDeny=any
+IPAddressAllow=localhost
 RestrictNamespaces=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes

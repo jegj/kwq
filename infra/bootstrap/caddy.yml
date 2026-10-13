@@ -12,13 +12,33 @@
       ansible.builtin.copy:
         dest: /etc/caddy/Caddyfile
         content: |
+          {% if kwq_acme_email is defined %}
+          {
+              email {{ kwq_acme_email }}
+          }
+
+          {% endif %}
           {{ kwq_domain }} {
               encode zstd gzip
+              log
+
+              header {
+                  Strict-Transport-Security "max-age=31536000"
+                  X-Content-Type-Options nosniff
+                  Referrer-Policy strict-origin-when-cross-origin
+                  -Server
+              }
 
               @assets path /assets/*
               header @assets >Cache-Control "public, max-age=31536000, immutable"
 
-              reverse_proxy localhost:3000
+              # Watcher sends ~110KB max (10k body + 100k bodyHtml chars); matches Nest bodyLimit
+              @hooks path /hooks/*
+              request_body @hooks {
+                  max_size 1MB
+              }
+
+              reverse_proxy 127.0.0.1:3000
           }
         owner: root
         group: caddy

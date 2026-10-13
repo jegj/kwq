@@ -1,6 +1,8 @@
 ---
 # Public domain Caddy serves (DNS A/AAAA must point at the box for TLS to issue)
-kwq_domain: kwq.example.com
+kwq_domain: qhawaq.space
+# ACME account contact for Let's Encrypt (optional)
+kwq_acme_email: jegj57@gmail.com
 kwq_db_name: kwq
 # Must equal the OS user the service runs as (kwq): the app uses socket peer auth, no DB password
 kwq_db_user: kwq
