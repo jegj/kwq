@@ -1,6 +1,20 @@
 ---
-# Configure the kwq app: service user, env file, systemd unit. Idempotent.
-#   ansible-playbook app.yml --ask-vault-pass
+# Configure and deploy the kwq app. Idempotent.
+#   ansible-playbook app.yml --ask-vault-pass                (configure + build + deploy)
+#   ansible-playbook app.yml --ask-vault-pass --tags deploy  (redeploy only)
+# The build runs locally first: if it fails, the run aborts before touching the box.
+- name: Build kwq locally
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Build server and assets
+      ansible.builtin.command:
+        cmd: npm run build --workspace=server
+        chdir: "{{ playbook_dir }}/../.."
+      changed_when: true
+      tags: deploy
+
 - name: Configure kwq app
   hosts: kwq
   become: true
@@ -49,8 +63,10 @@
           APP_ENV=production
           PUBLIC_URL=https://{{ kwq_domain }}
           APP_TIMEZONE={{ kwq_app_timezone }}
-          DATABASE_URL="postgresql://{{ kwq_db_user }}:{{ kwq_db_password }}@localhost:5432/{{ kwq_db_name }}?schema=public"
+          DATABASE_URL="postgresql://{{ kwq_db_user }}@/{{ kwq_db_name }}?host=/var/run/postgresql&schema=public"
           JWT_SECRET={{ kwq_jwt_secret }}
+          OBSERVE_APP_KEY={{ kwq_observe_app_key }}
+          OBSERVE_APP_SECRET={{ kwq_observe_app_secret }}
         owner: root
         group: root
         mode: "0600"
@@ -60,7 +76,7 @@
 
     - name: Install kwq systemd unit
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../kwq.service"
+        src: "{{ playbook_dir }}/kwq.service"
         dest: /etc/systemd/system/kwq.service
         owner: root
         group: root
@@ -72,12 +88,109 @@
       ansible.builtin.meta: flush_handlers
       tags: app
 
-    # Enabled but not started: dist/ isn't deployed yet
     - name: Enable kwq service
       ansible.builtin.systemd_service:
         name: kwq
         enabled: true
       tags: app
+
+    # Deploy runs as the admin user (owns /opt/kwq, mapped to kwq_migrator in Postgres)
+    - name: Create app source directories
+      ansible.builtin.file:
+        path: "/opt/kwq/{{ item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: kwq
+        mode: "0750"
+      loop: [server, kwq_watcher]
+      tags: deploy
+
+    # Workspace manifests + lockfile, so `npm ci` resolves the server's dependencies
+    - name: Upload package manifests
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../{{ item }}"
+        dest: "/opt/kwq/{{ item }}"
+        mode: "0644"
+      become: false
+      loop:
+        - package.json
+        - package-lock.json
+        - .npmrc
+        - server/package.json
+        - server/prisma.config.ts
+        - kwq_watcher/package.json
+      register: manifests
+      tags: deploy
+
+    # prisma/seed.ts imports it straight from src/ (not part of dist/)
+    - name: Create seed helper directory
+      ansible.builtin.file:
+        path: /opt/kwq/server/src/auth/util
+        state: directory
+        mode: "0755"
+      become: false
+      tags: deploy
+
+    - name: Upload seed helper
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../server/src/auth/util/password.util.ts"
+        dest: /opt/kwq/server/src/auth/util/password.util.ts
+        mode: "0644"
+      become: false
+      tags: deploy
+
+    - name: Upload built server and Prisma schema/migrations
+      ansible.posix.synchronize:
+        src: "{{ playbook_dir }}/../../server/{{ item }}/"
+        dest: "/opt/kwq/server/{{ item }}/"
+        delete: true
+        rsync_opts: ["--chmod=D755,F644"]
+      become: false
+      loop: [dist, prisma]
+      tags: deploy
+
+    - name: Install server dependencies
+      ansible.builtin.command:
+        cmd: npm ci --workspace=server
+        chdir: /opt/kwq
+      become: false
+      changed_when: manifests.changed
+      tags: deploy
+
+    # prisma.config.ts requires DATABASE_URL even for `generate`
+    - name: Generate Prisma client
+      ansible.builtin.command:
+        cmd: npx prisma generate
+        chdir: /opt/kwq/server
+      environment:
+        DATABASE_URL: "postgresql://{{ kwq_db_migrator_user }}@localhost/{{ kwq_db_name }}?host=/var/run/postgresql&schema=public"
+      become: false
+      changed_when: true
+      tags: deploy
+
+    - name: Run database migrations
+      ansible.builtin.command:
+        cmd: npx prisma migrate deploy
+        chdir: /opt/kwq/server
+      environment:
+        DATABASE_URL: "postgresql://{{ kwq_db_migrator_user }}@localhost/{{ kwq_db_name }}?host=/var/run/postgresql&schema=public"
+      become: false
+      register: migrate
+      changed_when: "'No pending migrations' not in migrate.stdout"
+      tags: deploy
+
+    - name: Restart kwq
+      ansible.builtin.systemd_service:
+        name: kwq
+        state: restarted
+      tags: deploy
+
+    - name: Wait for kwq to listen
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 3000
+        timeout: 30
+      tags: deploy
 
   handlers:
     - name: Reload systemd

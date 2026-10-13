@@ -53,10 +53,8 @@ ProtectKernelLogs=yes
 ProtectControlGroups=yes
 ProtectClock=yes
 ProtectHostname=yes
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-# Only Caddy (localhost) talks to the app; the Postgres unix socket is unaffected
-IPAddressDeny=any
-IPAddressAllow=localhost
+# AF_NETLINK: Node's os.networkInterfaces() (Fastify logs the listen address) needs it
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 RestrictNamespaces=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes

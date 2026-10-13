@@ -346,7 +346,8 @@
       ansible.builtin.apt:
         name:
           - caddy
-          - nodejs
+          # Pinned to the NodeSource major: Ubuntu's own nodejs (no npm) otherwise satisfies a bare "nodejs"
+          - "nodejs={{ kwq_node_major }}.*"
           - "postgresql-{{ kwq_postgres_version }}"
           - python3-psycopg2
         state: present

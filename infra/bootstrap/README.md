@@ -47,7 +47,7 @@ Run as the migrator (your admin user, e.g. `linuxuser`, is mapped to `kwq_migrat
 
 ```
 psql -U kwq_migrator -d kwq                  # interactive shell
-DATABASE_URL="postgresql://kwq_migrator@/kwq?host=/var/run/postgresql&schema=public" \
+DATABASE_URL="postgresql://kwq_migrator@localhost/kwq?host=/var/run/postgresql&schema=public" \
   npx prisma migrate deploy                  # from /opt/kwq/server
 ```
 
@@ -55,7 +55,7 @@ DATABASE_URL="postgresql://kwq_migrator@/kwq?host=/var/run/postgresql&schema=pub
 - The app keeps using `kwq` (its `DATABASE_URL` is in `/etc/kwq/kwq.env`).
 - The mapping applies to the user in `inventory.ini` (`ansible_user`). Other OS users can't act as the migrator.
 - Check the setup: `psql -U kwq_migrator -d kwq -c '\conninfo'` should connect without a password prompt, and `psql -U kwq_migrator -d postgres` should be refused.
-- Unverified: whether Prisma's migrate CLI accepts the `host=` socket URL. Test it on the first deploy.
+- Prisma's migrate CLI rejects an empty host (`@/kwq`), so the migrator URL uses `@localhost/kwq?host=/var/run/postgresql`; `host=` overrides `localhost` and the connection goes over the socket.
 
 ## After provisioning
 
