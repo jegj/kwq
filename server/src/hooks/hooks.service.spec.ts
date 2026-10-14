@@ -98,6 +98,7 @@ describe('HooksService', () => {
         parserName: 'test-parser',
         transactionId: 'txn-1',
       },
+      select: { id: true },
     });
   });
 
@@ -149,6 +150,7 @@ describe('HooksService', () => {
     expect(prisma._tx.emailNotification.update).toHaveBeenCalledWith({
       where: { id: 'notif-1' },
       data: { parseStatus: 'FAILED', parserName: 'broken-parser' },
+      select: { id: true },
     });
   });
 });

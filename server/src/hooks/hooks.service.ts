@@ -64,6 +64,7 @@ export class HooksService {
             bodyHtml: email.bodyHtml,
             receivedAt: email.receivedAt,
           },
+          select: { id: true },
         });
       } catch (error) {
         if (
@@ -103,11 +104,13 @@ export class HooksService {
             parserName: parser.name,
             transactionId: transaction.id,
           },
+          select: { id: true },
         });
       } else {
         await tx.emailNotification.update({
           where: { id: notification.id },
           data: { parseStatus: 'FAILED', parserName: parser.name },
+          select: { id: true },
         });
       }
     });
