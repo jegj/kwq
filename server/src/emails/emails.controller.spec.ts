@@ -35,7 +35,11 @@ function controllerWith(rows: unknown[]) {
       findFirst: vi.fn(),
     },
   };
-  return { prisma, controller: new EmailsController(prisma as any) };
+  const registry = { names: ['bcp', 'interbank', 'falabella'] };
+  return {
+    prisma,
+    controller: new EmailsController(prisma as any, registry as any),
+  };
 }
 
 describe('EmailsController', () => {
@@ -174,6 +178,41 @@ describe('EmailsController', () => {
         expect.objectContaining({ where: { userId: 'user-1' } }),
       );
       expect(result.month).toBeNull();
+    });
+  });
+
+  describe('getEmails status and parser filters', () => {
+    it('filters by status and parser and keeps them in the view model', async () => {
+      const { prisma, controller } = controllerWith([]);
+
+      const result = await controller.getEmails(requestWithUser('user-1'), {
+        status: 'FAILED',
+        parser: 'bcp',
+      });
+
+      expect(prisma.emailNotification.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', parseStatus: 'FAILED', parserName: 'bcp' },
+        }),
+      );
+      expect(result.status).toBe('FAILED');
+      expect(result.parser).toBe('bcp');
+      expect(result.parsers).toEqual(['bcp', 'interbank', 'falabella']);
+    });
+
+    it('ignores an unknown status and an unknown parser', async () => {
+      const { prisma, controller } = controllerWith([]);
+
+      const result = await controller.getEmails(requestWithUser('user-1'), {
+        status: 'foo',
+        parser: 'nope',
+      });
+
+      expect(prisma.emailNotification.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-1' } }),
+      );
+      expect(result.status).toBeNull();
+      expect(result.parser).toBeNull();
     });
   });
 

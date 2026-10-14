@@ -147,7 +147,9 @@ table thead th {
     flex: 1 1 0;
   }
 
-  .emails-filter input[type="month"] {
+  .emails-filter label,
+  .emails-filter input[type="month"],
+  .emails-filter select {
     width: 100%;
   }
 }

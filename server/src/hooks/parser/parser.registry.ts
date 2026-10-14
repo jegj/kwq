@@ -13,6 +13,10 @@ export class ParserRegistry {
     new FalabellaParser(),
   ];
 
+  get names(): string[] {
+    return this.parsers.map((parser) => parser.name);
+  }
+
   find(email: GmailWebhookDto): BankParser | null {
     return this.parsers.find((parser) => parser.canParse(email)) ?? null;
   }

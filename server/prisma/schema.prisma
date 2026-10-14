@@ -61,6 +61,8 @@ model EmailNotification {
 
   @@unique([userId, messageId])
   @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, parseStatus, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, parserName, createdAt(sort: Desc), id(sort: Desc)])
   @@map("email_notification")
 }
 

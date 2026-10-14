@@ -7,5 +7,6 @@ import { ParserRegistry } from './parser/parser.registry.js';
 @Module({
   controllers: [HooksController],
   providers: [WebhookTokenGuard, HooksService, ParserRegistry],
+  exports: [ParserRegistry],
 })
 export class HooksModule {}

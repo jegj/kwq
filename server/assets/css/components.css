@@ -267,6 +267,7 @@
 
 .emails-filter {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   gap: 0.5rem;
   margin-bottom: 1rem;
@@ -277,6 +278,7 @@
 }
 
 .emails-filter input,
+.emails-filter select,
 .emails-filter button,
 .emails-filter a {
   margin: 0;

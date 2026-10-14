@@ -9,9 +9,10 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { ParseStatus, type Prisma } from '@prisma/client';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/guard/session.guard.js';
+import { ParserRegistry } from '../hooks/parser/parser.registry.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
   formatCursor,
@@ -26,12 +27,17 @@ interface EmailsQuery {
   before?: string;
   after?: string;
   month?: string;
+  status?: string;
+  parser?: string;
 }
 
 @Controller('app/emails')
 @UseGuards(SessionGuard)
 export class EmailsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parserRegistry: ParserRegistry,
+  ) {}
 
   @Get()
   @Render('app-layout')
@@ -46,6 +52,17 @@ export class EmailsController {
     };
     if (month) {
       where.createdAt = month;
+    }
+    const parsers = this.parserRegistry.names;
+    const status = Object.values(ParseStatus).find(
+      (value) => value === query.status,
+    );
+    const parser = parsers.find((name) => name === query.parser);
+    if (status) {
+      where.parseStatus = status;
+    }
+    if (parser) {
+      where.parserName = parser;
     }
     if (before) {
       where.OR = [
@@ -95,6 +112,9 @@ export class EmailsController {
       currentPath: CURRENT_PATH,
       emails,
       month: month ? query.month : null,
+      status: status ?? null,
+      parser: parser ?? null,
+      parsers,
       olderCursor: hasOlder
         ? formatCursor({ date: last.createdAt, id: last.id })
         : null,

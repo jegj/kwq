@@ -279,7 +279,10 @@ per the stack decision above); JSON endpoints exist only for mutations
   - `GET /app/emails` — read-only list, own rows only. Keyset-paginated on
     `(createdAt DESC, id DESC)`, 20 per page: `?before=<cursor>` (older) /
     `?after=<cursor>` (newer), cursor = `<createdAtMs>_<id>`. Optional
-    `?month=YYYY-MM` filter, boundaries in `APP_TIMEZONE` (see Timezone).
+    `?month=YYYY-MM` filter, boundaries in `APP_TIMEZONE` (see Timezone), plus
+    `?status=UNPARSED|PARSED|FAILED` and `?parser=<name>` (names from
+    `ParserRegistry`; invalid values ignored). Backed by composite indexes
+    `(userId, parseStatus|parserName, createdAt DESC, id DESC)`.
   - `GET /app/emails/:id` — metadata + sandboxed-iframe preview of `bodyHtml`
     (falls back to plain `body`); 404 for other users' emails; links to its
     transaction if parsed
@@ -293,7 +296,7 @@ per the stack decision above); JSON endpoints exist only for mutations
   - `DELETE /app/admin/users/:id` — remove
 
 Conventions: raw UUIDs in paths (matches Prisma PKs), no query-param
-filtering on lists for v1 (exception: `/app/emails` cursor + `month`).
+filtering on lists for v1 (exception: `/app/emails` cursor + `month`/`status`/`parser`).
 
 ## Open follow-ups (not yet decided)
 
