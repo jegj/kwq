@@ -38,7 +38,12 @@ const validBody = {
   transactionDate: '2026-09-30T07:00',
 } as any;
 
-function controllerWith(rows: unknown[] = []) {
+const registry = { names: ['bcp', 'interbank'] };
+
+function controllerWith(
+  rows: unknown[] = [],
+  categories: { id: string }[] = [],
+) {
   const prisma = {
     transaction: {
       findMany: vi.fn().mockResolvedValue(rows),
@@ -48,11 +53,12 @@ function controllerWith(rows: unknown[] = []) {
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     category: {
-      findMany: vi.fn().mockResolvedValue([]),
+      findMany: vi.fn().mockResolvedValue(categories),
       findFirst: vi.fn().mockResolvedValue({ id: UUID(9) }),
     },
   };
-  return { prisma, controller: new TransactionsController(prisma as any) };
+  return { prisma, controller: new TransactionsController(prisma as any, registry as any),
+  };
 }
 
 describe('TransactionsController', () => {
@@ -176,6 +182,122 @@ describe('TransactionsController', () => {
         expect.objectContaining({ where: { userId: 'user-1' } }),
       );
       expect(result.month).toBeNull();
+    });
+    it('filters by a category the user can see', async () => {
+      const { prisma, controller } = controllerWith([], [{ id: UUID(9) }]);
+
+      const result = await controller.getTransactions(
+        requestWithUser('user-1'),
+        { category: UUID(9) },
+      );
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', categoryId: UUID(9) },
+        }),
+      );
+      expect(result.category).toBe(UUID(9));
+    });
+
+    it('filters uncategorized transactions with category=none', async () => {
+      const { prisma, controller } = controllerWith();
+
+      const result = await controller.getTransactions(
+        requestWithUser('user-1'),
+        { category: 'none' },
+      );
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', categoryId: null },
+        }),
+      );
+      expect(result.category).toBe('none');
+    });
+
+    it('ignores a category the user cannot see', async () => {
+      const { prisma, controller } = controllerWith([], [{ id: UUID(9) }]);
+
+      const result = await controller.getTransactions(
+        requestWithUser('user-1'),
+        { category: UUID(7) },
+      );
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-1' } }),
+      );
+      expect(result.category).toBeNull();
+    });
+
+    it('filters by a registered parser through the source email', async () => {
+      const { prisma, controller } = controllerWith();
+
+      const result = await controller.getTransactions(
+        requestWithUser('user-1'),
+        { parser: 'bcp' },
+      );
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', email: { is: { parserName: 'bcp' } } },
+        }),
+      );
+      expect(result.parser).toBe('bcp');
+      expect(result.parsers).toEqual(['bcp', 'interbank']);
+    });
+
+    it('filters manual transactions (no source email) with parser=manual', async () => {
+      const { prisma, controller } = controllerWith();
+
+      const result = await controller.getTransactions(
+        requestWithUser('user-1'),
+        { parser: 'manual' },
+      );
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', email: { is: null } },
+        }),
+      );
+      expect(result.parser).toBe('manual');
+    });
+
+    it('ignores an unknown parser', async () => {
+      const { prisma, controller } = controllerWith();
+
+      const result = await controller.getTransactions(
+        requestWithUser('user-1'),
+        { parser: 'nope' },
+      );
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-1' } }),
+      );
+      expect(result.parser).toBeNull();
+    });
+
+    it('combines month, category and parser filters with keyset paging', async () => {
+      const { prisma, controller } = controllerWith([], [{ id: UUID(9) }]);
+      const cursor = transactionRow(5);
+
+      await controller.getTransactions(requestWithUser('user-1'), {
+        month: '2026-09',
+        category: UUID(9),
+        parser: 'bcp',
+        before: cursorOf(cursor),
+      });
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: 'user-1',
+            categoryId: UUID(9),
+            email: { is: { parserName: 'bcp' } },
+            transactionDate: expect.any(Object),
+            OR: expect.any(Array),
+          }),
+        }),
+      );
     });
   });
 

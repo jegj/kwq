@@ -6,16 +6,36 @@
   <form method="get" action="/app/transactions" class="emails-filter">
     <label>
       Month
-      <input type="month" name="month" value="<%= month ?? '' %>" onchange="this.form.requestSubmit()" />
+      <input type="month" name="month" value="<%= month ?? '' %>" x-on:change="$el.form.requestSubmit()" />
+    </label>
+    <label>
+      Category
+      <select name="category" x-on:change="$el.form.requestSubmit()">
+        <option value="">All</option>
+        <option value="none"<%= category === 'none' ? ' selected' : '' %>>Uncategorized</option>
+        <% categories.forEach((item) => { %>
+        <option value="<%= item.id %>"<%= category === item.id ? ' selected' : '' %>><%= item.name %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>
+      Parser
+      <select name="parser" x-on:change="$el.form.requestSubmit()">
+        <option value="">All</option>
+        <option value="manual"<%= parser === 'manual' ? ' selected' : '' %>>Manual</option>
+        <% parsers.forEach((name) => { %>
+        <option value="<%= name %>"<%= parser === name ? ' selected' : '' %>><%= name %></option>
+        <% }) %>
+      </select>
     </label>
     <noscript><button type="submit">Filter</button></noscript>
-    <% if (month) { %>
+    <% if (month || category || parser) { %>
     <a href="/app/transactions" role="button" class="outline secondary">Clear</a>
     <% } %>
   </form>
 
   <% if (transactions.length === 0) { %>
-  <p class="categories-empty">No transactions<%= month ? ' for this month' : ' yet' %>. Add one, or wait for the next bank email.</p>
+  <p class="categories-empty">No transactions<%= (month || category || parser) ? ' match these filters' : ' yet' %>. Add one, or wait for the next bank email.</p>
   <% } else { %>
   <div class="overflow-auto">
   <table class="list-table">
@@ -52,14 +72,17 @@
   </div>
 
   <%
-    const monthQuery = month ? `&month=${month}` : '';
+    const filterQuery = Object.entries({ month, category, parser })
+      .filter(([, value]) => value)
+      .map(([key, value]) => `&${key}=${encodeURIComponent(value)}`)
+      .join('');
   %>
   <nav class="emails-pager" aria-label="Pagination">
     <% if (newerCursor) { %>
-    <a href="/app/transactions?after=<%= newerCursor %><%= monthQuery %>" role="button" class="outline secondary">&larr; Newer</a>
+    <a href="/app/transactions?after=<%= newerCursor %><%= filterQuery %>" role="button" class="outline secondary">&larr; Newer</a>
     <% } else { %><span></span><% } %>
     <% if (olderCursor) { %>
-    <a href="/app/transactions?before=<%= olderCursor %><%= monthQuery %>" role="button" class="outline secondary">Older &rarr;</a>
+    <a href="/app/transactions?before=<%= olderCursor %><%= filterQuery %>" role="button" class="outline secondary">Older &rarr;</a>
     <% } %>
   </nav>
   <% } %>

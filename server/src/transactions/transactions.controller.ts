@@ -24,6 +24,7 @@ import {
   parseCursor,
 } from '../common/pagination.util.js';
 import { APP_TIMEZONE, parseInputValue } from '../common/timezone.util.js';
+import { ParserRegistry } from '../hooks/parser/parser.registry.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TransactionDto } from './dto/transaction.dto.js';
 
@@ -34,7 +35,13 @@ interface TransactionsQuery {
   before?: string;
   after?: string;
   month?: string;
+  category?: string;
+  parser?: string;
 }
+
+// Sentinel filter values: no category / no source email.
+const NONE = 'none';
+const MANUAL = 'manual';
 
 const transactionSelect = {
   id: true,
@@ -55,7 +62,10 @@ const transactionSelect = {
 @Controller('app/transactions')
 @UseGuards(SessionGuard)
 export class TransactionsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parserRegistry: ParserRegistry,
+  ) {}
 
   @Get()
   @Render('app-layout')
@@ -68,9 +78,26 @@ export class TransactionsController {
     // ponytail: ?after wins over ?before if both are sent.
     const before = after ? undefined : parseCursor(query.before);
 
+    const categories = await this.loadCategories(request.user?.id);
+    const parsers = this.parserRegistry.names;
+    const category =
+      query.category === NONE
+        ? NONE
+        : categories.find((item) => item.id === query.category)?.id;
+    const parser =
+      query.parser === MANUAL
+        ? MANUAL
+        : parsers.find((name) => name === query.parser);
+
     const where: Prisma.TransactionWhereInput = { userId: request.user?.id };
     if (month) {
       where.transactionDate = month;
+    }
+    if (category) {
+      where.categoryId = category === NONE ? null : category;
+    }
+    if (parser) {
+      where.email = { is: parser === MANUAL ? null : { parserName: parser } };
     }
     if (before) {
       where.OR = [
@@ -120,8 +147,11 @@ export class TransactionsController {
         ...row,
         amount: String(row.amount),
       })),
-      categories: await this.loadCategories(request.user?.id),
+      categories,
+      parsers,
       month: month ? query.month : null,
+      category: category ?? null,
+      parser: parser ?? null,
       olderCursor: hasOlder ? cursorOf(last) : null,
       newerCursor: hasNewer ? cursorOf(first) : null,
     };

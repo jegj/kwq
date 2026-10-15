@@ -98,7 +98,8 @@ model Transaction {
   createdAt             DateTime  @db.Timestamptz(3) @default(now()) @map("created_at")
   updatedAt             DateTime  @db.Timestamptz(3) @updatedAt @map("updated_at")
 
-  @@index([userId, transactionDate])
+  @@index([userId, transactionDate(sort: Desc), id(sort: Desc)])
+  @@index([userId, categoryId, transactionDate(sort: Desc), id(sort: Desc)])
   @@map("transaction")
 }
 
