@@ -202,6 +202,7 @@
 
 .parser-chip {
   --parser-hue: 210;
+  --parser-shade: 0%;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -210,17 +211,23 @@
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: hsl(var(--parser-hue) 80% 78%);
-  background: hsl(var(--parser-hue) 55% 40% / 0.18);
-  border: 1px solid hsl(var(--parser-hue) 55% 55% / 0.45);
+  color: hsl(var(--parser-hue) 80% calc(78% + var(--parser-shade)));
+  background: hsl(var(--parser-hue) 55% calc(40% + var(--parser-shade)) / 0.18);
+  border: 1px solid hsl(var(--parser-hue) 55% calc(55% + var(--parser-shade)) / 0.45);
 }
+
+/* One hue per parser; add a line when a new parser is registered
+   (falls back to the default above). */
+.parser-chip[data-parser="bcp"] { --parser-hue: 215; }
+.parser-chip[data-parser="interbank"] { --parser-hue: 130; --parser-shade: 8%; }
+.parser-chip[data-parser="falabella"] { --parser-hue: 150; --parser-shade: -24%; }
 
 .parser-chip::before {
   content: '';
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: hsl(var(--parser-hue) 80% 65%);
+  background: hsl(var(--parser-hue) 80% calc(65% + var(--parser-shade)));
 }
 
 .categories-badge {
