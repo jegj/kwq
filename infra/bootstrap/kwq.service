@@ -17,8 +17,9 @@ User=kwq
 Group=kwq
 WorkingDirectory=/opt/kwq/server
 EnvironmentFile=/etc/kwq/kwq.env
-# Heap well under MemoryHigh: Node also uses buffers + native memory on top of it
-Environment=NODE_OPTIONS=--max-old-space-size=256
+# Heap well under MemoryHigh: Node also uses buffers + native memory on top of it.
+# --enable-source-maps maps stack traces back to the .ts files via dist/*.js.map.
+Environment="NODE_OPTIONS=--max-old-space-size=256 --enable-source-maps"
 ExecStart=/usr/bin/node dist/main
 
 # Restart / shutdown (app calls enableShutdownHooks, so SIGTERM closes cleanly)
