@@ -8,5 +8,6 @@ import { CategoriesService } from './categories.service.js';
   imports: [AuthModule],
   controllers: [CategoriesController],
   providers: [CategoriesService, CategoriesRepository],
+  exports: [CategoriesRepository],
 })
 export class CategoriesModule {}

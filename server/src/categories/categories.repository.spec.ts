@@ -16,6 +16,7 @@ function repositoryWith() {
   const prisma = {
     category: {
       findMany: vi.fn().mockResolvedValue([]),
+      findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: 'cat-1' }),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -118,6 +119,25 @@ describe('CategoriesRepository', () => {
       prisma.category.deleteMany.mockResolvedValue({ count: 0 });
 
       expect(await repository.deleteOwn('cat-2', 'user-1')).toBe(false);
+    });
+  });
+
+  describe('isAccessible', () => {
+    it('is true for a global or own category', async () => {
+      const { prisma, repository } = repositoryWith();
+      prisma.category.findFirst.mockResolvedValue({ id: 'cat-1' });
+
+      expect(await repository.isAccessible('cat-1', 'user-1')).toBe(true);
+      expect(prisma.category.findFirst).toHaveBeenCalledWith({
+        where: { id: 'cat-1', OR: [{ userId: null }, { userId: 'user-1' }] },
+        select: { id: true },
+      });
+    });
+
+    it('is false otherwise', async () => {
+      const { repository } = repositoryWith();
+
+      expect(await repository.isAccessible('cat-1', 'user-1')).toBe(false);
     });
   });
 });

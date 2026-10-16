@@ -104,24 +104,4 @@ export class TransactionsRepository {
     });
     return count > 0;
   }
-
-  // ponytail: category queries live here until CategoriesController gets its own repository.
-  findCategories(userId: string) {
-    return this.prisma.category.findMany({
-      where: { OR: [{ userId: null }, { userId }] },
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, icon: true },
-    });
-  }
-
-  async isCategoryAccessible(
-    categoryId: string,
-    userId: string,
-  ): Promise<boolean> {
-    const category = await this.prisma.category.findFirst({
-      where: { id: categoryId, OR: [{ userId: null }, { userId }] },
-      select: { id: true },
-    });
-    return category !== null;
-  }
 }

@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { CategoriesRepository } from '../categories/categories.repository.js';
 import {
   monthRange,
   paginate,
@@ -33,6 +34,7 @@ const toView = (row: TransactionRecord) => ({
 export class TransactionsService {
   constructor(
     private readonly repository: TransactionsRepository,
+    private readonly categoriesRepository: CategoriesRepository,
     private readonly parserRegistry: ParserRegistry,
   ) {}
 
@@ -42,7 +44,7 @@ export class TransactionsService {
     // ponytail: ?after wins over ?before if both are sent.
     const before = after ? undefined : parseCursor(query.before);
 
-    const categories = await this.repository.findCategories(userId);
+    const categories = await this.categoriesRepository.findVisible(userId);
     const parsers = this.parserRegistry.names;
     const category =
       query.category === NONE
@@ -100,7 +102,7 @@ export class TransactionsService {
     }
     return {
       transaction: toView(row),
-      categories: await this.repository.findCategories(userId),
+      categories: await this.categoriesRepository.findVisible(userId),
     };
   }
 
@@ -162,7 +164,7 @@ export class TransactionsService {
     if (categoryId === null) {
       return;
     }
-    if (!(await this.repository.isCategoryAccessible(categoryId, userId))) {
+    if (!(await this.categoriesRepository.isAccessible(categoryId, userId))) {
       throw new BadRequestException('Unknown category.');
     }
   }

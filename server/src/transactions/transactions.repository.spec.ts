@@ -13,10 +13,6 @@ function repositoryWith() {
       update: vi.fn().mockResolvedValue({}),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
-    category: {
-      findMany: vi.fn().mockResolvedValue([]),
-      findFirst: vi.fn().mockResolvedValue(null),
-    },
   };
   return { prisma, repository: new TransactionsRepository(prisma as any) };
 }
@@ -173,41 +169,6 @@ describe('TransactionsRepository', () => {
       prisma.transaction.deleteMany.mockResolvedValue({ count: 0 });
 
       expect(await repository.delete(UUID(1), 'user-1')).toBe(false);
-    });
-  });
-
-  it('findCategories returns shared and own categories by name', async () => {
-    const { prisma, repository } = repositoryWith();
-
-    await repository.findCategories('user-1');
-
-    expect(prisma.category.findMany).toHaveBeenCalledWith({
-      where: { OR: [{ userId: null }, { userId: 'user-1' }] },
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, icon: true },
-    });
-  });
-
-  describe('isCategoryAccessible', () => {
-    it('is true for a shared or own category', async () => {
-      const { prisma, repository } = repositoryWith();
-      prisma.category.findFirst.mockResolvedValue({ id: UUID(9) });
-
-      expect(await repository.isCategoryAccessible(UUID(9), 'user-1')).toBe(
-        true,
-      );
-      expect(prisma.category.findFirst).toHaveBeenCalledWith({
-        where: { id: UUID(9), OR: [{ userId: null }, { userId: 'user-1' }] },
-        select: { id: true },
-      });
-    });
-
-    it('is false otherwise', async () => {
-      const { repository } = repositoryWith();
-
-      expect(await repository.isCategoryAccessible(UUID(9), 'user-1')).toBe(
-        false,
-      );
     });
   });
 });

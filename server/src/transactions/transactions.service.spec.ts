@@ -40,12 +40,19 @@ function serviceWith(rows: unknown[] = [], categories: { id: string }[] = []) {
     create: vi.fn().mockResolvedValue({ id: UUID(1) }),
     update: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(true),
-    findCategories: vi.fn().mockResolvedValue(categories),
-    isCategoryAccessible: vi.fn().mockResolvedValue(true),
+  };
+  const categoriesRepository = {
+    findVisible: vi.fn().mockResolvedValue(categories),
+    isAccessible: vi.fn().mockResolvedValue(true),
   };
   return {
     repository,
-    service: new TransactionsService(repository as any, registry as any),
+    categoriesRepository,
+    service: new TransactionsService(
+      repository as any,
+      categoriesRepository as any,
+      registry as any,
+    ),
   };
 }
 
@@ -258,13 +265,13 @@ describe('TransactionsService', () => {
     });
 
     it('rejects a category that is neither shared nor the user’s', async () => {
-      const { repository, service } = serviceWith();
-      repository.isCategoryAccessible.mockResolvedValue(false);
+      const { repository, categoriesRepository, service } = serviceWith();
+      categoriesRepository.isAccessible.mockResolvedValue(false);
 
       await expect(
         service.create('user-1', { ...validBody, categoryId: UUID(9) }),
       ).rejects.toThrow(BadRequestException);
-      expect(repository.isCategoryAccessible).toHaveBeenCalledWith(
+      expect(categoriesRepository.isAccessible).toHaveBeenCalledWith(
         UUID(9),
         'user-1',
       );
@@ -310,7 +317,7 @@ describe('TransactionsService', () => {
     });
 
     it('leaves the flag untouched when the category did not change', async () => {
-      const { repository, service } = serviceWith();
+      const { repository, categoriesRepository, service } = serviceWith();
       repository.findCategoryId.mockResolvedValue({ categoryId: UUID(9) });
 
       await service.update('user-1', UUID(1), {
@@ -320,11 +327,11 @@ describe('TransactionsService', () => {
 
       const [, data] = repository.update.mock.calls[0];
       expect(data.isManuallyCategorized).toBeUndefined();
-      expect(repository.isCategoryAccessible).not.toHaveBeenCalled();
+      expect(categoriesRepository.isAccessible).not.toHaveBeenCalled();
     });
 
     it('allows clearing the category without a lookup', async () => {
-      const { repository, service } = serviceWith();
+      const { repository, categoriesRepository, service } = serviceWith();
       repository.findCategoryId.mockResolvedValue({ categoryId: UUID(9) });
 
       await service.update('user-1', UUID(1), {
@@ -332,7 +339,7 @@ describe('TransactionsService', () => {
         categoryId: null,
       });
 
-      expect(repository.isCategoryAccessible).not.toHaveBeenCalled();
+      expect(categoriesRepository.isAccessible).not.toHaveBeenCalled();
       expect(repository.update).toHaveBeenCalledWith(
         UUID(1),
         expect.objectContaining({
@@ -343,9 +350,9 @@ describe('TransactionsService', () => {
     });
 
     it('rejects switching to an inaccessible category', async () => {
-      const { repository, service } = serviceWith();
+      const { repository, categoriesRepository, service } = serviceWith();
       repository.findCategoryId.mockResolvedValue({ categoryId: null });
-      repository.isCategoryAccessible.mockResolvedValue(false);
+      categoriesRepository.isAccessible.mockResolvedValue(false);
 
       await expect(
         service.update('user-1', UUID(1), {

@@ -20,6 +20,14 @@ export class CategoriesRepository {
     });
   }
 
+  async isAccessible(id: string, userId: string): Promise<boolean> {
+    const category = await this.prisma.category.findFirst({
+      where: { id, OR: [{ userId: null }, { userId }] },
+      select: { id: true },
+    });
+    return category !== null;
+  }
+
   async create(userId: string, data: CreateCategoryDto) {
     try {
       return await this.prisma.category.create({
