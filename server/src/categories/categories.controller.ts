@@ -11,16 +11,18 @@ import {
   Patch,
   Post,
   Render,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/guard/session.guard.js';
+import type { AuthenticatedUser } from '../auth/types/auth.types.js';
+import { CurrentUser } from '../common/current-user.decorator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 
 const PRISMA_UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
+
+const CURRENT_PATH = '/app/categories';
 
 @Controller('app/categories')
 @UseGuards(SessionGuard)
@@ -29,22 +31,22 @@ export class CategoriesController {
 
   @Get()
   @Render('app-layout')
-  async getCategories(@Req() request: FastifyRequest) {
+  async getCategories(@CurrentUser() user: AuthenticatedUser) {
     const rows = await this.prisma.category.findMany({
-      where: { OR: [{ userId: null }, { userId: request.user?.id }] },
+      where: { OR: [{ userId: null }, { userId: user.id }] },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, icon: true, color: true, userId: true },
     });
     const categories = rows.map(({ userId, ...category }) => ({
       ...category,
-      isOwnCategory: userId === request.user?.id,
+      isOwnCategory: userId === user.id,
     }));
     return {
       title: 'Categories',
       page: './pages/categories',
-      email: request.user?.email,
-      role: request.user?.role,
-      currentPath: request.url,
+      email: user.email,
+      role: user.role,
+      currentPath: CURRENT_PATH,
       categories,
     };
   }
@@ -52,12 +54,12 @@ export class CategoriesController {
   @Post()
   @HttpCode(201)
   async createCategory(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: CreateCategoryDto,
   ) {
     try {
       return await this.prisma.category.create({
-        data: { ...body, userId: request.user?.id },
+        data: { ...body, userId: user.id },
         select: { id: true, name: true, icon: true, color: true },
       });
     } catch (error) {
@@ -68,13 +70,13 @@ export class CategoriesController {
   @Patch(':id')
   @HttpCode(200)
   async updateCategory(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: CreateCategoryDto,
   ) {
     try {
       const { count } = await this.prisma.category.updateMany({
-        where: { id, userId: request.user?.id },
+        where: { id, userId: user.id },
         data: body,
       });
       if (count > 0) {
@@ -89,11 +91,11 @@ export class CategoriesController {
   @Delete(':id')
   @HttpCode(204)
   async deleteCategory(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const { count } = await this.prisma.category.deleteMany({
-      where: { id, userId: request.user?.id },
+      where: { id, userId: user.id },
     });
     if (count === 0) {
       throw new NotFoundException('Category not found.');

@@ -1,18 +1,14 @@
 import { NotFoundException } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
-import { EmailsController } from './emails.controller.js';
 import { formatCursor } from '../common/pagination.util.js';
+import { EmailsController } from './emails.controller.js';
 
 const PAGE_SIZE = 20;
 const UUID = (n: number) =>
   `0192a3b4-c5d6-7e8f-9a0b-${String(n).padStart(12, '0')}`;
 
-function requestWithUser(id: string): FastifyRequest {
-  return {
-    url: '/app/emails',
-    user: { id, role: 'USER', email: 'user@example.com' },
-  } as any;
+function userWith(id: string) {
+  return { id, role: 'USER', email: 'user@example.com' };
 }
 
 const cursorOf = (row: { createdAt: Date; id: string }) =>
@@ -47,7 +43,7 @@ describe('EmailsController', () => {
     it('scopes the first page to the user, newest first, fetching one extra row', async () => {
       const { prisma, controller } = controllerWith([emailRow(1)]);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {});
+      const result = await controller.getEmails(userWith('user-1'), {});
 
       expect(prisma.emailNotification.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-1' },
@@ -72,7 +68,7 @@ describe('EmailsController', () => {
       const rows = Array.from({ length: PAGE_SIZE + 1 }, (_, i) => emailRow(i));
       const { controller } = controllerWith(rows);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {});
+      const result = await controller.getEmails(userWith('user-1'), {});
 
       expect(result.emails).toHaveLength(PAGE_SIZE);
       expect(result.olderCursor).toBe(cursorOf(rows[PAGE_SIZE - 1]));
@@ -83,7 +79,7 @@ describe('EmailsController', () => {
       const cursor = emailRow(5);
       const { prisma, controller } = controllerWith([emailRow(6)]);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {
+      const result = await controller.getEmails(userWith('user-1'), {
         before: cursorOf(cursor),
       });
 
@@ -106,7 +102,7 @@ describe('EmailsController', () => {
       const cursor = emailRow(5);
       const { prisma, controller } = controllerWith([emailRow(4), emailRow(3)]);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {
+      const result = await controller.getEmails(userWith('user-1'), {
         after: cursorOf(cursor),
       });
 
@@ -133,7 +129,7 @@ describe('EmailsController', () => {
     it('restricts to the selected month and keeps it in the view model', async () => {
       const { prisma, controller } = controllerWith([]);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {
+      const result = await controller.getEmails(userWith('user-1'), {
         month: '2026-09',
       });
 
@@ -155,7 +151,7 @@ describe('EmailsController', () => {
       const cursor = emailRow(5);
       const { prisma, controller } = controllerWith([]);
 
-      await controller.getEmails(requestWithUser('user-1'), {
+      await controller.getEmails(userWith('user-1'), {
         month: '2026-09',
         before: cursorOf(cursor),
       });
@@ -169,7 +165,7 @@ describe('EmailsController', () => {
     it('ignores a malformed cursor and an invalid month', async () => {
       const { prisma, controller } = controllerWith([]);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {
+      const result = await controller.getEmails(userWith('user-1'), {
         before: 'garbage',
         month: '2026-13',
       });
@@ -185,7 +181,7 @@ describe('EmailsController', () => {
     it('filters by status and parser and keeps them in the view model', async () => {
       const { prisma, controller } = controllerWith([]);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {
+      const result = await controller.getEmails(userWith('user-1'), {
         status: 'FAILED',
         parser: 'bcp',
       });
@@ -203,7 +199,7 @@ describe('EmailsController', () => {
     it('ignores an unknown status and an unknown parser', async () => {
       const { prisma, controller } = controllerWith([]);
 
-      const result = await controller.getEmails(requestWithUser('user-1'), {
+      const result = await controller.getEmails(userWith('user-1'), {
         status: 'foo',
         parser: 'nope',
       });
@@ -224,10 +220,7 @@ describe('EmailsController', () => {
         subject: 'Consumo',
       });
 
-      const result = await controller.getEmail(
-        requestWithUser('user-1'),
-        UUID(1),
-      );
+      const result = await controller.getEmail(userWith('user-1'), UUID(1));
 
       expect(prisma.emailNotification.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: UUID(1), userId: 'user-1' } }),
@@ -241,7 +234,7 @@ describe('EmailsController', () => {
       prisma.emailNotification.findFirst.mockResolvedValue(null);
 
       await expect(
-        controller.getEmail(requestWithUser('user-1'), UUID(1)),
+        controller.getEmail(userWith('user-1'), UUID(1)),
       ).rejects.toThrow(NotFoundException);
     });
   });

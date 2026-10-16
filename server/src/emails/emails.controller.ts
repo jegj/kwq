@@ -6,30 +6,23 @@ import {
   ParseUUIDPipe,
   Query,
   Render,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ParseStatus, type Prisma } from '@prisma/client';
-import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/guard/session.guard.js';
-import { ParserRegistry } from '../hooks/parser/parser.registry.js';
-import { PrismaService } from '../prisma/prisma.service.js';
+import type { AuthenticatedUser } from '../auth/types/auth.types.js';
+import { CurrentUser } from '../common/current-user.decorator.js';
 import {
   formatCursor,
   monthRange,
   parseCursor,
 } from '../common/pagination.util.js';
+import { ParserRegistry } from '../hooks/parser/parser.registry.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { EmailsQueryDto } from './dto/emails-query.dto.js';
 
 const PAGE_SIZE = 20;
 const CURRENT_PATH = '/app/emails';
-
-interface EmailsQuery {
-  before?: string;
-  after?: string;
-  month?: string;
-  status?: string;
-  parser?: string;
-}
 
 @Controller('app/emails')
 @UseGuards(SessionGuard)
@@ -41,14 +34,17 @@ export class EmailsController {
 
   @Get()
   @Render('app-layout')
-  async getEmails(@Req() request: FastifyRequest, @Query() query: EmailsQuery) {
+  async getEmails(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: EmailsQueryDto,
+  ) {
     const month = monthRange(query.month);
     const after = parseCursor(query.after);
     // ponytail: ?after wins over ?before if both are sent.
     const before = after ? undefined : parseCursor(query.before);
 
     const where: Prisma.EmailNotificationWhereInput = {
-      userId: request.user?.id,
+      userId: user.id,
     };
     if (month) {
       where.createdAt = month;
@@ -107,8 +103,8 @@ export class EmailsController {
     return {
       title: 'Email Notifications',
       page: './pages/emails',
-      email: request.user?.email,
-      role: request.user?.role,
+      email: user.email,
+      role: user.role,
       currentPath: CURRENT_PATH,
       emails,
       month: month ? query.month : null,
@@ -127,11 +123,11 @@ export class EmailsController {
   @Get(':id')
   @Render('app-layout')
   async getEmail(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const notification = await this.prisma.emailNotification.findFirst({
-      where: { id, userId: request.user?.id },
+      where: { id, userId: user.id },
       select: {
         id: true,
         messageId: true,
@@ -152,9 +148,9 @@ export class EmailsController {
     return {
       title: notification.subject,
       page: './pages/email-detail',
-      email: request.user?.email,
+      email: user.email,
       notification,
-      role: request.user?.role,
+      role: user.role,
       currentPath: CURRENT_PATH,
     };
   }

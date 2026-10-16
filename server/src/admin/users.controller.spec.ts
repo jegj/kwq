@@ -1,12 +1,11 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { verifyPassword } from '../auth/util/password.util.js';
 import { UsersController } from './users.controller.js';
 
-function requestWithUser(id: string): FastifyRequest {
-  return { user: { id, role: 'ADMIN', email: 'admin@example.com' } } as any;
+function userWith(id: string) {
+  return { id, role: 'ADMIN', email: 'admin@example.com' };
 }
 
 function duplicateEmailError(): Prisma.PrismaClientKnownRequestError {
@@ -75,7 +74,7 @@ describe('UsersController', () => {
       };
       const controller = new UsersController(prisma as any);
 
-      await controller.updateUser(requestWithUser('admin-1'), 'user-2', {
+      await controller.updateUser(userWith('admin-1'), 'user-2', {
         role: 'ADMIN',
       });
 
@@ -92,7 +91,7 @@ describe('UsersController', () => {
       const controller = new UsersController(prisma as any);
 
       await expect(
-        controller.updateUser(requestWithUser('admin-1'), 'user-2', {
+        controller.updateUser(userWith('admin-1'), 'user-2', {
           role: 'ADMIN',
         }),
       ).rejects.toBeInstanceOf(NotFoundException);
@@ -106,7 +105,7 @@ describe('UsersController', () => {
       };
       const controller = new UsersController(prisma as any);
 
-      await controller.deleteUser(requestWithUser('admin-1'), 'user-2');
+      await controller.deleteUser(userWith('admin-1'), 'user-2');
 
       expect(prisma.user.deleteMany).toHaveBeenCalledWith({
         where: { id: 'user-2', NOT: { id: 'admin-1' } },
@@ -120,7 +119,7 @@ describe('UsersController', () => {
       const controller = new UsersController(prisma as any);
 
       await expect(
-        controller.deleteUser(requestWithUser('admin-1'), 'user-2'),
+        controller.deleteUser(userWith('admin-1'), 'user-2'),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });

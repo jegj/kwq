@@ -8,16 +8,18 @@ import {
   Patch,
   Post,
   Render,
-  Req,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/guard/session.guard.js';
+import type { AuthenticatedUser } from '../auth/types/auth.types.js';
 import { hashPassword, verifyPassword } from '../auth/util/password.util.js';
+import { CurrentUser } from '../common/current-user.decorator.js';
 import { hashWebhookToken } from '../hooks/util/webhook-token.util.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+
+const CURRENT_PATH = '/app/settings';
 
 @Controller('app/settings')
 @UseGuards(SessionGuard)
@@ -26,27 +28,27 @@ export class SettingsController {
 
   @Get()
   @Render('app-layout')
-  async getSettings(@Req() request: FastifyRequest) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: request.user?.id },
+  async getSettings(@CurrentUser() user: AuthenticatedUser) {
+    const account = await this.prisma.user.findUnique({
+      where: { id: user.id },
       select: { webhookToken: true },
     });
     return {
       title: 'Settings',
       page: './pages/settings',
-      email: request.user?.email,
-      role: request.user?.role,
-      currentPath: request.url,
-      hasWebhookToken: user?.webhookToken != null,
+      email: user.email,
+      role: user.role,
+      currentPath: CURRENT_PATH,
+      hasWebhookToken: account?.webhookToken != null,
     };
   }
 
   @Post('webhook-token')
   @HttpCode(200)
-  async generateWebhookToken(@Req() request: FastifyRequest) {
+  async generateWebhookToken(@CurrentUser() user: AuthenticatedUser) {
     const token = randomUUID();
     const { count } = await this.prisma.user.updateMany({
-      where: { id: request.user?.id, webhookToken: null },
+      where: { id: user.id, webhookToken: null },
       data: { webhookToken: hashWebhookToken(token) },
     });
     if (count === 0) {
@@ -58,21 +60,21 @@ export class SettingsController {
   @Patch('password')
   @HttpCode(200)
   async changePassword(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: ChangePasswordDto,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: request.user?.id },
+    const account = await this.prisma.user.findUnique({
+      where: { id: user.id },
       select: { passwordHash: true },
     });
     if (
-      !user ||
-      !(await verifyPassword(body.currentPassword, user.passwordHash))
+      !account ||
+      !(await verifyPassword(body.currentPassword, account.passwordHash))
     ) {
       throw new UnauthorizedException('Current password is incorrect.');
     }
     await this.prisma.user.update({
-      where: { id: request.user?.id },
+      where: { id: user.id },
       data: { passwordHash: await hashPassword(body.newPassword) },
     });
     return { success: true };

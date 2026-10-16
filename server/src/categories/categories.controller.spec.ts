@@ -1,11 +1,10 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { CategoriesController } from './categories.controller.js';
 
-function requestWithUser(id: string): FastifyRequest {
-  return { user: { id, role: 'USER', email: 'user@example.com' } } as any;
+function userWith(id: string) {
+  return { id, role: 'USER', email: 'user@example.com' };
 }
 
 function duplicateNameError(): Prisma.PrismaClientKnownRequestError {
@@ -47,7 +46,7 @@ describe('CategoriesController', () => {
       };
       const controller = new CategoriesController(prisma as any);
 
-      const result = await controller.getCategories(requestWithUser('user-1'));
+      const result = await controller.getCategories(userWith('user-1'));
 
       expect(prisma.category.findMany).toHaveBeenCalledWith({
         where: { OR: [{ userId: null }, { userId: 'user-1' }] },
@@ -94,14 +93,11 @@ describe('CategoriesController', () => {
       };
       const controller = new CategoriesController(prisma as any);
 
-      const result = await controller.createCategory(
-        requestWithUser('user-1'),
-        {
-          name: 'Gym',
-          icon: '💪',
-          color: '#00ff00',
-        },
-      );
+      const result = await controller.createCategory(userWith('user-1'), {
+        name: 'Gym',
+        icon: '💪',
+        color: '#00ff00',
+      });
 
       expect(prisma.category.create).toHaveBeenCalledWith({
         data: { name: 'Gym', icon: '💪', color: '#00ff00', userId: 'user-1' },
@@ -123,7 +119,7 @@ describe('CategoriesController', () => {
       const controller = new CategoriesController(prisma as any);
 
       await expect(
-        controller.createCategory(requestWithUser('user-1'), { name: 'Gym' }),
+        controller.createCategory(userWith('user-1'), { name: 'Gym' }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
   });
@@ -135,7 +131,7 @@ describe('CategoriesController', () => {
       };
       const controller = new CategoriesController(prisma as any);
 
-      await controller.updateCategory(requestWithUser('user-1'), 'cat-2', {
+      await controller.updateCategory(userWith('user-1'), 'cat-2', {
         name: 'Fitness',
         icon: '🏋️',
         color: '#0000ff',
@@ -154,7 +150,7 @@ describe('CategoriesController', () => {
       const controller = new CategoriesController(prisma as any);
 
       await expect(
-        controller.updateCategory(requestWithUser('user-1'), 'cat-1', {
+        controller.updateCategory(userWith('user-1'), 'cat-1', {
           name: 'Hacked',
         }),
       ).rejects.toBeInstanceOf(NotFoundException);
@@ -169,7 +165,7 @@ describe('CategoriesController', () => {
       const controller = new CategoriesController(prisma as any);
 
       await expect(
-        controller.updateCategory(requestWithUser('user-1'), 'cat-2', {
+        controller.updateCategory(userWith('user-1'), 'cat-2', {
           name: 'Gym',
         }),
       ).rejects.toBeInstanceOf(ConflictException);
@@ -183,7 +179,7 @@ describe('CategoriesController', () => {
       };
       const controller = new CategoriesController(prisma as any);
 
-      await controller.deleteCategory(requestWithUser('user-1'), 'cat-2');
+      await controller.deleteCategory(userWith('user-1'), 'cat-2');
 
       expect(prisma.category.deleteMany).toHaveBeenCalledWith({
         where: { id: 'cat-2', userId: 'user-1' },
@@ -197,7 +193,7 @@ describe('CategoriesController', () => {
       const controller = new CategoriesController(prisma as any);
 
       await expect(
-        controller.deleteCategory(requestWithUser('user-1'), 'cat-1'),
+        controller.deleteCategory(userWith('user-1'), 'cat-1'),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });

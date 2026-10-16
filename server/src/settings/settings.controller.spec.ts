@@ -1,12 +1,11 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { hashPassword } from '../auth/util/password.util.js';
 import { hashWebhookToken } from '../hooks/util/webhook-token.util.js';
 import { SettingsController } from './settings.controller.js';
 
-function requestWithUser(id: string): FastifyRequest {
-  return { user: { id, role: 'USER', email: 'javier@example.com' } } as any;
+function userWith(id: string) {
+  return { id, role: 'USER', email: 'javier@example.com' };
 }
 
 describe('SettingsController', () => {
@@ -17,9 +16,7 @@ describe('SettingsController', () => {
       };
       const controller = new SettingsController(prisma as any);
 
-      const result = await controller.generateWebhookToken(
-        requestWithUser('user-1'),
-      );
+      const result = await controller.generateWebhookToken(userWith('user-1'));
 
       expect(prisma.user.updateMany).toHaveBeenCalledWith({
         where: { id: 'user-1', webhookToken: null },
@@ -37,7 +34,7 @@ describe('SettingsController', () => {
       const controller = new SettingsController(prisma as any);
 
       await expect(
-        controller.generateWebhookToken(requestWithUser('user-1')),
+        controller.generateWebhookToken(userWith('user-1')),
       ).rejects.toBeInstanceOf(ConflictException);
     });
   });
@@ -49,7 +46,7 @@ describe('SettingsController', () => {
       };
       const controller = new SettingsController(prisma as any);
 
-      const result = await controller.getSettings(requestWithUser('user-1'));
+      const result = await controller.getSettings(userWith('user-1'));
 
       expect(result.hasWebhookToken).toBe(false);
     });
@@ -62,7 +59,7 @@ describe('SettingsController', () => {
       };
       const controller = new SettingsController(prisma as any);
 
-      const result = await controller.getSettings(requestWithUser('user-1'));
+      const result = await controller.getSettings(userWith('user-1'));
 
       expect(result.hasWebhookToken).toBe(true);
     });
@@ -79,7 +76,7 @@ describe('SettingsController', () => {
       };
       const controller = new SettingsController(prisma as any);
 
-      await controller.changePassword(requestWithUser('user-1'), {
+      await controller.changePassword(userWith('user-1'), {
         currentPassword: 'old-password',
         newPassword: 'new-password',
       });
@@ -95,18 +92,16 @@ describe('SettingsController', () => {
     it('rejects when the current password is wrong', async () => {
       const prisma = {
         user: {
-          findUnique: vi
-            .fn()
-            .mockResolvedValue({
-              passwordHash: await hashPassword('old-password'),
-            }),
+          findUnique: vi.fn().mockResolvedValue({
+            passwordHash: await hashPassword('old-password'),
+          }),
           update: vi.fn(),
         },
       };
       const controller = new SettingsController(prisma as any);
 
       await expect(
-        controller.changePassword(requestWithUser('user-1'), {
+        controller.changePassword(userWith('user-1'), {
           currentPassword: 'wrong-password',
           newPassword: 'new-password',
         }),

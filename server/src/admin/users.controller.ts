@@ -11,19 +11,21 @@ import {
   Patch,
   Post,
   Render,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { FastifyRequest } from 'fastify';
 import { AdminGuard } from '../auth/guard/admin.guard.js';
 import { SessionGuard } from '../auth/guard/session.guard.js';
+import type { AuthenticatedUser } from '../auth/types/auth.types.js';
 import { hashPassword } from '../auth/util/password.util.js';
+import { CurrentUser } from '../common/current-user.decorator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
 const PRISMA_UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
+
+const CURRENT_PATH = '/app/admin/users';
 
 @Controller('app/admin/users')
 @UseGuards(SessionGuard, AdminGuard)
@@ -32,18 +34,18 @@ export class UsersController {
 
   @Get()
   @Render('app-layout')
-  async getUsers(@Req() request: FastifyRequest) {
+  async getUsers(@CurrentUser() user: AuthenticatedUser) {
     const users = await this.prisma.user.findMany({
-      where: { id: { not: request.user?.id } },
+      where: { id: { not: user.id } },
       orderBy: { createdAt: 'asc' },
       select: { id: true, email: true, role: true, createdAt: true },
     });
     return {
       title: 'Users',
       page: './pages/admin-users',
-      email: request.user?.email,
-      role: request.user?.role,
-      currentPath: request.url,
+      email: user.email,
+      role: user.role,
+      currentPath: CURRENT_PATH,
       users,
     };
   }
@@ -75,12 +77,12 @@ export class UsersController {
   @Patch(':id')
   @HttpCode(200)
   async updateUser(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateUserDto,
   ) {
     const { count } = await this.prisma.user.updateMany({
-      where: { id, NOT: { id: request.user?.id } },
+      where: { id, NOT: { id: user.id } },
       data: { role: body.role },
     });
     if (count === 0) {
@@ -91,11 +93,11 @@ export class UsersController {
   @Delete(':id')
   @HttpCode(204)
   async deleteUser(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const { count } = await this.prisma.user.deleteMany({
-      where: { id, NOT: { id: request.user?.id } },
+      where: { id, NOT: { id: user.id } },
     });
     if (count === 0) {
       throw new NotFoundException('User not found.');

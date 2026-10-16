@@ -1,15 +1,10 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Render,
-  Req,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
+import { Controller, Get, Query, Render, UseGuards } from '@nestjs/common';
 import { SessionGuard } from '../auth/guard/session.guard.js';
+import type { AuthenticatedUser } from '../auth/types/auth.types.js';
+import { CurrentUser } from '../common/current-user.decorator.js';
 import { DashboardService } from './dashboard.service.js';
+
+const CURRENT_PATH = '/app/dashboard';
 
 @Controller('app')
 export class DashboardController {
@@ -19,22 +14,20 @@ export class DashboardController {
   @UseGuards(SessionGuard)
   @Render('app-layout')
   async getDashboard(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('month') month?: string,
   ) {
-    // SessionGuard guarantees a user; this narrows the type without `!`.
-    if (!request.user) throw new UnauthorizedException();
     const monthNav = this.dashboardService.getMonthNav(month);
     const summaries = await this.dashboardService.getSummaries(
-      request.user.id,
+      user.id,
       monthNav.month,
     );
     return {
       title: 'Dashboard',
       page: './pages/dashboard',
-      email: request.user?.email,
-      role: request.user?.role,
-      currentPath: request.url,
+      email: user.email,
+      role: user.role,
+      currentPath: CURRENT_PATH,
       monthNav,
       summaries,
     };

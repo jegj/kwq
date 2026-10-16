@@ -1,5 +1,4 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { formatCursor } from '../common/pagination.util.js';
 import { TransactionsController } from './transactions.controller.js';
@@ -8,11 +7,8 @@ const PAGE_SIZE = 20;
 const UUID = (n: number) =>
   `0192a3b4-c5d6-7e8f-9a0b-${String(n).padStart(12, '0')}`;
 
-function requestWithUser(id: string): FastifyRequest {
-  return {
-    url: '/app/transactions',
-    user: { id, role: 'USER', email: 'user@example.com' },
-  } as any;
+function userWith(id: string) {
+  return { id, role: 'USER', email: 'user@example.com' };
 }
 
 const cursorOf = (row: { transactionDate: Date; id: string }) =>
@@ -57,7 +53,9 @@ function controllerWith(
       findFirst: vi.fn().mockResolvedValue({ id: UUID(9) }),
     },
   };
-  return { prisma, controller: new TransactionsController(prisma as any, registry as any),
+  return {
+    prisma,
+    controller: new TransactionsController(prisma as any, registry as any),
   };
 }
 
@@ -66,10 +64,7 @@ describe('TransactionsController', () => {
     it('scopes the first page to the user, newest transaction first, one extra row', async () => {
       const { prisma, controller } = controllerWith([transactionRow(1)]);
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        {},
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {});
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -90,10 +85,7 @@ describe('TransactionsController', () => {
       );
       const { controller } = controllerWith(rows);
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        {},
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {});
 
       expect(result.transactions).toHaveLength(PAGE_SIZE);
       expect(result.olderCursor).toBe(cursorOf(rows[PAGE_SIZE - 1]));
@@ -103,10 +95,9 @@ describe('TransactionsController', () => {
       const cursor = transactionRow(5);
       const { prisma, controller } = controllerWith([transactionRow(6)]);
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { before: cursorOf(cursor) },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        before: cursorOf(cursor),
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -131,10 +122,9 @@ describe('TransactionsController', () => {
         transactionRow(3),
       ]);
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { after: cursorOf(transactionRow(5)) },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        after: cursorOf(transactionRow(5)),
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -151,10 +141,9 @@ describe('TransactionsController', () => {
     it('restricts to the selected month by transaction date', async () => {
       const { prisma, controller } = controllerWith();
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { month: '2026-09' },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        month: '2026-09',
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -173,10 +162,10 @@ describe('TransactionsController', () => {
     it('ignores a malformed cursor and an invalid month', async () => {
       const { prisma, controller } = controllerWith();
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { before: 'garbage', month: '2026-13' },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        before: 'garbage',
+        month: '2026-13',
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { userId: 'user-1' } }),
@@ -186,10 +175,9 @@ describe('TransactionsController', () => {
     it('filters by a category the user can see', async () => {
       const { prisma, controller } = controllerWith([], [{ id: UUID(9) }]);
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { category: UUID(9) },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        category: UUID(9),
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -202,10 +190,9 @@ describe('TransactionsController', () => {
     it('filters uncategorized transactions with category=none', async () => {
       const { prisma, controller } = controllerWith();
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { category: 'none' },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        category: 'none',
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -218,10 +205,9 @@ describe('TransactionsController', () => {
     it('ignores a category the user cannot see', async () => {
       const { prisma, controller } = controllerWith([], [{ id: UUID(9) }]);
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { category: UUID(7) },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        category: UUID(7),
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { userId: 'user-1' } }),
@@ -232,10 +218,9 @@ describe('TransactionsController', () => {
     it('filters by a registered parser through the source email', async () => {
       const { prisma, controller } = controllerWith();
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { parser: 'bcp' },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        parser: 'bcp',
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -249,10 +234,9 @@ describe('TransactionsController', () => {
     it('filters manual transactions (no source email) with parser=manual', async () => {
       const { prisma, controller } = controllerWith();
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { parser: 'manual' },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        parser: 'manual',
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -265,10 +249,9 @@ describe('TransactionsController', () => {
     it('ignores an unknown parser', async () => {
       const { prisma, controller } = controllerWith();
 
-      const result = await controller.getTransactions(
-        requestWithUser('user-1'),
-        { parser: 'nope' },
-      );
+      const result = await controller.getTransactions(userWith('user-1'), {
+        parser: 'nope',
+      });
 
       expect(prisma.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { userId: 'user-1' } }),
@@ -280,7 +263,7 @@ describe('TransactionsController', () => {
       const { prisma, controller } = controllerWith([], [{ id: UUID(9) }]);
       const cursor = transactionRow(5);
 
-      await controller.getTransactions(requestWithUser('user-1'), {
+      await controller.getTransactions(userWith('user-1'), {
         month: '2026-09',
         category: UUID(9),
         parser: 'bcp',
@@ -310,7 +293,7 @@ describe('TransactionsController', () => {
       });
 
       const result = await controller.getTransaction(
-        requestWithUser('user-1'),
+        userWith('user-1'),
         UUID(1),
       );
 
@@ -326,7 +309,7 @@ describe('TransactionsController', () => {
       prisma.transaction.findFirst.mockResolvedValue(null);
 
       await expect(
-        controller.getTransaction(requestWithUser('user-1'), UUID(1)),
+        controller.getTransaction(userWith('user-1'), UUID(1)),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -335,7 +318,7 @@ describe('TransactionsController', () => {
     it('creates for the user without flagging manual categorization when no category is given', async () => {
       const { prisma, controller } = controllerWith();
 
-      await controller.createTransaction(requestWithUser('user-1'), validBody);
+      await controller.createTransaction(userWith('user-1'), validBody);
 
       expect(prisma.transaction.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -352,7 +335,7 @@ describe('TransactionsController', () => {
     it('flags manual categorization when a category is given', async () => {
       const { prisma, controller } = controllerWith();
 
-      await controller.createTransaction(requestWithUser('user-1'), {
+      await controller.createTransaction(userWith('user-1'), {
         ...validBody,
         categoryId: UUID(9),
       });
@@ -372,7 +355,7 @@ describe('TransactionsController', () => {
       prisma.category.findFirst.mockResolvedValue(null);
 
       await expect(
-        controller.createTransaction(requestWithUser('user-1'), {
+        controller.createTransaction(userWith('user-1'), {
           ...validBody,
           categoryId: UUID(9),
         }),
@@ -394,11 +377,7 @@ describe('TransactionsController', () => {
       prisma.transaction.findFirst.mockResolvedValue(null);
 
       await expect(
-        controller.updateTransaction(
-          requestWithUser('user-1'),
-          UUID(1),
-          validBody,
-        ),
+        controller.updateTransaction(userWith('user-1'), UUID(1), validBody),
       ).rejects.toThrow(NotFoundException);
       expect(prisma.transaction.update).not.toHaveBeenCalled();
     });
@@ -407,7 +386,7 @@ describe('TransactionsController', () => {
       const { prisma, controller } = controllerWith();
       prisma.transaction.findFirst.mockResolvedValue({ categoryId: null });
 
-      await controller.updateTransaction(requestWithUser('user-1'), UUID(1), {
+      await controller.updateTransaction(userWith('user-1'), UUID(1), {
         ...validBody,
         categoryId: UUID(9),
       });
@@ -422,7 +401,7 @@ describe('TransactionsController', () => {
       );
 
       prisma.transaction.findFirst.mockResolvedValue({ categoryId: UUID(9) });
-      await controller.updateTransaction(requestWithUser('user-1'), UUID(1), {
+      await controller.updateTransaction(userWith('user-1'), UUID(1), {
         ...validBody,
         categoryId: UUID(9),
       });
@@ -434,7 +413,7 @@ describe('TransactionsController', () => {
       const { prisma, controller } = controllerWith();
       prisma.transaction.findFirst.mockResolvedValue({ categoryId: UUID(9) });
 
-      await controller.updateTransaction(requestWithUser('user-1'), UUID(1), {
+      await controller.updateTransaction(userWith('user-1'), UUID(1), {
         ...validBody,
         categoryId: null,
       });
@@ -455,7 +434,7 @@ describe('TransactionsController', () => {
     it('deletes only the user’s transaction', async () => {
       const { prisma, controller } = controllerWith();
 
-      await controller.deleteTransaction(requestWithUser('user-1'), UUID(1));
+      await controller.deleteTransaction(userWith('user-1'), UUID(1));
 
       expect(prisma.transaction.deleteMany).toHaveBeenCalledWith({
         where: { id: UUID(1), userId: 'user-1' },
@@ -467,7 +446,7 @@ describe('TransactionsController', () => {
       prisma.transaction.deleteMany.mockResolvedValue({ count: 0 });
 
       await expect(
-        controller.deleteTransaction(requestWithUser('user-1'), UUID(1)),
+        controller.deleteTransaction(userWith('user-1'), UUID(1)),
       ).rejects.toThrow(NotFoundException);
     });
   });

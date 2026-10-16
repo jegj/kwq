@@ -3,16 +3,16 @@ import {
   Controller,
   HttpCode,
   Post,
-  Req,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
 import { SkipOriginCheck } from '../common/skip-origin-check.decorator.js';
 import { GmailWebhookDto } from './dto/email-webhook.dto.js';
 import { WebhookTokenGuard } from './guard/webhook-token.guard.js';
 import { HooksService } from './hooks.service.js';
 import { HooksExceptionFilter } from './hooks-exception.filter.js';
+import type { WebhookAuthenticatedUser } from './types/hooks.types.js';
+import { WebhookUser } from './webhook-user.decorator.js';
 
 // Called by the gscript with a token, not by a browser, so no Origin header.
 @SkipOriginCheck()
@@ -26,9 +26,8 @@ export class HooksController {
   @UseGuards(WebhookTokenGuard)
   async receiveGmail(
     @Body() payload: GmailWebhookDto,
-    @Req() request: FastifyRequest,
+    @WebhookUser() webhookUser: WebhookAuthenticatedUser,
   ) {
-    // biome-ignore lint/style/noNonNullAssertion: webhookUser is guaranteed to be set by the WebhookTokenGuard
-    await this.hooksService.receiveEmail(request.webhookUser!.id, payload);
+    await this.hooksService.receiveEmail(webhookUser.id, payload);
   }
 }

@@ -4,8 +4,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import { RedirectException } from '../redirect/redirect.exception.js';
 import { AuthService } from '../auth.service.js';
+import { RedirectException } from '../redirect/redirect.exception.js';
 import { verifyAuthToken } from '../util/jwt.util.js';
 
 @Injectable()

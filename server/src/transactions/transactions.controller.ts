@@ -12,12 +12,12 @@ import {
   Post,
   Query,
   Render,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/guard/session.guard.js';
+import type { AuthenticatedUser } from '../auth/types/auth.types.js';
+import { CurrentUser } from '../common/current-user.decorator.js';
 import {
   formatCursor,
   monthRange,
@@ -27,17 +27,10 @@ import { APP_TIMEZONE, parseInputValue } from '../common/timezone.util.js';
 import { ParserRegistry } from '../hooks/parser/parser.registry.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TransactionDto } from './dto/transaction.dto.js';
+import { TransactionsQueryDto } from './dto/transactions-query.dto.js';
 
 const PAGE_SIZE = 20;
 const CURRENT_PATH = '/app/transactions';
-
-interface TransactionsQuery {
-  before?: string;
-  after?: string;
-  month?: string;
-  category?: string;
-  parser?: string;
-}
 
 // Sentinel filter values: no category / no source email.
 const NONE = 'none';
@@ -70,15 +63,15 @@ export class TransactionsController {
   @Get()
   @Render('app-layout')
   async getTransactions(
-    @Req() request: FastifyRequest,
-    @Query() query: TransactionsQuery,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: TransactionsQueryDto,
   ) {
     const month = monthRange(query.month);
     const after = parseCursor(query.after);
     // ponytail: ?after wins over ?before if both are sent.
     const before = after ? undefined : parseCursor(query.before);
 
-    const categories = await this.loadCategories(request.user?.id);
+    const categories = await this.loadCategories(user.id);
     const parsers = this.parserRegistry.names;
     const category =
       query.category === NONE
@@ -89,7 +82,7 @@ export class TransactionsController {
         ? MANUAL
         : parsers.find((name) => name === query.parser);
 
-    const where: Prisma.TransactionWhereInput = { userId: request.user?.id };
+    const where: Prisma.TransactionWhereInput = { userId: user.id };
     if (month) {
       where.transactionDate = month;
     }
@@ -140,8 +133,8 @@ export class TransactionsController {
     return {
       title: 'Transactions',
       page: './pages/transactions',
-      email: request.user?.email,
-      role: request.user?.role,
+      email: user.email,
+      role: user.role,
       currentPath: CURRENT_PATH,
       transactions: ordered.map((row) => ({
         ...row,
@@ -160,11 +153,11 @@ export class TransactionsController {
   @Get(':id')
   @Render('app-layout')
   async getTransaction(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const row = await this.prisma.transaction.findFirst({
-      where: { id, userId: request.user?.id },
+      where: { id, userId: user.id },
       select: transactionSelect,
     });
     if (!row) {
@@ -173,26 +166,26 @@ export class TransactionsController {
     return {
       title: row.merchant,
       page: './pages/transaction-detail',
-      email: request.user?.email,
-      role: request.user?.role,
+      email: user.email,
+      role: user.role,
       currentPath: CURRENT_PATH,
       transaction: { ...row, amount: String(row.amount) },
-      categories: await this.loadCategories(request.user?.id),
+      categories: await this.loadCategories(user.id),
     };
   }
 
   @Post()
   @HttpCode(201)
   async createTransaction(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: TransactionDto,
   ) {
     const categoryId = body.categoryId ?? null;
-    await this.assertCategoryAccessible(categoryId, request.user?.id);
+    await this.assertCategoryAccessible(categoryId, user.id);
     return this.prisma.transaction.create({
       data: {
         ...this.toData(body),
-        userId: request.user?.id as string,
+        userId: user.id,
         isManuallyCategorized: categoryId !== null,
       },
       select: { id: true },
@@ -202,12 +195,12 @@ export class TransactionsController {
   @Patch(':id')
   @HttpCode(204)
   async updateTransaction(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: TransactionDto,
   ) {
     const existing = await this.prisma.transaction.findFirst({
-      where: { id, userId: request.user?.id },
+      where: { id, userId: user.id },
       select: { categoryId: true },
     });
     if (!existing) {
@@ -216,7 +209,7 @@ export class TransactionsController {
     const categoryId = body.categoryId ?? null;
     const categoryChanged = categoryId !== existing.categoryId;
     if (categoryChanged) {
-      await this.assertCategoryAccessible(categoryId, request.user?.id);
+      await this.assertCategoryAccessible(categoryId, user.id);
     }
     await this.prisma.transaction.update({
       where: { id },
@@ -230,11 +223,11 @@ export class TransactionsController {
   @Delete(':id')
   @HttpCode(204)
   async deleteTransaction(
-    @Req() request: FastifyRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const { count } = await this.prisma.transaction.deleteMany({
-      where: { id, userId: request.user?.id },
+      where: { id, userId: user.id },
     });
     if (count === 0) {
       throw new NotFoundException('Transaction not found.');
@@ -260,7 +253,7 @@ export class TransactionsController {
     };
   }
 
-  private loadCategories(userId: string | undefined) {
+  private loadCategories(userId: string) {
     return this.prisma.category.findMany({
       where: { OR: [{ userId: null }, { userId }] },
       orderBy: { name: 'asc' },
@@ -270,7 +263,7 @@ export class TransactionsController {
 
   private async assertCategoryAccessible(
     categoryId: string | null,
-    userId: string | undefined,
+    userId: string,
   ) {
     if (categoryId === null) {
       return;
