@@ -1,126 +1,51 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
-import { verifyPassword } from '../auth/util/password.util.js';
 import { UsersController } from './users.controller.js';
 
-function userWith(id: string) {
-  return { id, role: 'ADMIN', email: 'admin@example.com' };
-}
+const admin = { id: 'admin-1', role: 'ADMIN', email: 'admin@example.com' };
 
-function duplicateEmailError(): Prisma.PrismaClientKnownRequestError {
-  return new Prisma.PrismaClientKnownRequestError('duplicate', {
-    code: 'P2002',
-    clientVersion: '0.0.0',
-  });
+function controllerWith() {
+  const service = {
+    list: vi.fn().mockResolvedValue([{ id: 'user-2' }]),
+    create: vi.fn().mockResolvedValue({ id: 'user-3' }),
+    updateRole: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
+  };
+  return { service, controller: new UsersController(service as any) };
 }
 
 describe('UsersController', () => {
-  describe('createUser', () => {
-    it('creates a user with a hashed password', async () => {
-      const prisma = {
-        user: {
-          create: vi.fn().mockImplementation(({ data }) =>
-            Promise.resolve({
-              id: 'user-2',
-              email: data.email,
-              role: data.role,
-              createdAt: new Date(),
-            }),
-          ),
-        },
-      };
-      const controller = new UsersController(prisma as any);
+  it('renders the page with the admin chrome and the other users', async () => {
+    const { service, controller } = controllerWith();
 
-      const result = await controller.createUser({
-        email: 'new@example.com',
-        password: 'password123',
-        role: 'USER',
-      });
+    const result = await controller.getUsers(admin);
 
-      expect(prisma.user.create).toHaveBeenCalled();
-      const createArgs = prisma.user.create.mock.calls[0][0];
-      expect(
-        await verifyPassword('password123', createArgs.data.passwordHash),
-      ).toBe(true);
-      expect(result).toEqual({
-        id: 'user-2',
-        email: 'new@example.com',
-        role: 'USER',
-        createdAt: expect.any(Date),
-      });
-    });
-
-    it('rejects a duplicate email', async () => {
-      const prisma = {
-        user: { create: vi.fn().mockRejectedValue(duplicateEmailError()) },
-      };
-      const controller = new UsersController(prisma as any);
-
-      await expect(
-        controller.createUser({
-          email: 'dup@example.com',
-          password: 'password123',
-          role: 'USER',
-        }),
-      ).rejects.toBeInstanceOf(ConflictException);
+    expect(service.list).toHaveBeenCalledWith('admin-1');
+    expect(result).toEqual({
+      title: 'Users',
+      page: './pages/admin-users',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      currentPath: '/app/admin/users',
+      users: [{ id: 'user-2' }],
     });
   });
 
-  describe('updateUser', () => {
-    it('updates the role, excluding the requesting admin', async () => {
-      const prisma = {
-        user: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-      };
-      const controller = new UsersController(prisma as any);
+  it('delegates create, role update and delete to the service', async () => {
+    const { service, controller } = controllerWith();
+    const created = {
+      email: 'a@b.co',
+      password: 'password123',
+      role: 'USER',
+    } as const;
 
-      await controller.updateUser(userWith('admin-1'), 'user-2', {
-        role: 'ADMIN',
-      });
+    expect(await controller.createUser(created)).toEqual({ id: 'user-3' });
+    await controller.updateUser(admin, 'user-2', { role: 'ADMIN' });
+    await controller.deleteUser(admin, 'user-2');
 
-      expect(prisma.user.updateMany).toHaveBeenCalledWith({
-        where: { id: 'user-2', NOT: { id: 'admin-1' } },
-        data: { role: 'ADMIN' },
-      });
+    expect(service.create).toHaveBeenCalledWith(created);
+    expect(service.updateRole).toHaveBeenCalledWith('admin-1', 'user-2', {
+      role: 'ADMIN',
     });
-
-    it('throws NotFoundException when no row matched', async () => {
-      const prisma = {
-        user: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
-      };
-      const controller = new UsersController(prisma as any);
-
-      await expect(
-        controller.updateUser(userWith('admin-1'), 'user-2', {
-          role: 'ADMIN',
-        }),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-  });
-
-  describe('deleteUser', () => {
-    it('deletes the user, excluding the requesting admin', async () => {
-      const prisma = {
-        user: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
-      };
-      const controller = new UsersController(prisma as any);
-
-      await controller.deleteUser(userWith('admin-1'), 'user-2');
-
-      expect(prisma.user.deleteMany).toHaveBeenCalledWith({
-        where: { id: 'user-2', NOT: { id: 'admin-1' } },
-      });
-    });
-
-    it('throws NotFoundException when no row matched', async () => {
-      const prisma = {
-        user: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
-      };
-      const controller = new UsersController(prisma as any);
-
-      await expect(
-        controller.deleteUser(userWith('admin-1'), 'user-2'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+    expect(service.remove).toHaveBeenCalledWith('admin-1', 'user-2');
   });
 });
