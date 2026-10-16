@@ -13,8 +13,10 @@ import { SessionGuard } from '../auth/guard/session.guard.js';
 import type { AuthenticatedUser } from '../auth/types/auth.types.js';
 import { CurrentUser } from '../common/current-user.decorator.js';
 import {
-  formatCursor,
+  keysetOrderBy,
+  keysetWhere,
   monthRange,
+  paginate,
   parseCursor,
 } from '../common/pagination.util.js';
 import { ParserRegistry } from '../hooks/parser/parser.registry.js';
@@ -60,24 +62,15 @@ export class EmailsController {
     if (parser) {
       where.parserName = parser;
     }
-    if (before) {
-      where.OR = [
-        { createdAt: { lt: before.date } },
-        { createdAt: before.date, id: { lt: before.id } },
-      ];
-    }
-    if (after) {
-      where.OR = [
-        { createdAt: { gt: after.date } },
-        { createdAt: after.date, id: { gt: after.id } },
-      ];
+    const keyset = keysetWhere('createdAt', { before, after });
+    if (keyset) {
+      where.OR = keyset;
     }
 
     // Fetch one extra row to know whether another page exists.
-    const direction = after ? 'asc' : 'desc';
     const rows = await this.prisma.emailNotification.findMany({
       where,
-      orderBy: [{ createdAt: direction }, { id: direction }],
+      orderBy: keysetOrderBy('createdAt', { after }),
       take: PAGE_SIZE + 1,
       select: {
         id: true,
@@ -88,17 +81,16 @@ export class EmailsController {
         createdAt: true,
       },
     });
-
-    const hasMore = rows.length > PAGE_SIZE;
-    const page = rows.slice(0, PAGE_SIZE);
-    const emails = after ? page.reverse() : page;
-    const first = emails[0];
-    const last = emails[emails.length - 1];
-
-    const hasOlder = after ? last !== undefined : hasMore;
-    const hasNewer = after
-      ? hasMore
-      : before !== undefined && first !== undefined;
+    const {
+      rows: emails,
+      olderCursor,
+      newerCursor,
+    } = paginate(rows, {
+      before,
+      after,
+      pageSize: PAGE_SIZE,
+      cursorOf: (row) => ({ date: row.createdAt, id: row.id }),
+    });
 
     return {
       title: 'Email Notifications',
@@ -111,12 +103,8 @@ export class EmailsController {
       status: status ?? null,
       parser: parser ?? null,
       parsers,
-      olderCursor: hasOlder
-        ? formatCursor({ date: last.createdAt, id: last.id })
-        : null,
-      newerCursor: hasNewer
-        ? formatCursor({ date: first.createdAt, id: first.id })
-        : null,
+      olderCursor,
+      newerCursor,
     };
   }
 

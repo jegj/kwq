@@ -19,8 +19,10 @@ import { SessionGuard } from '../auth/guard/session.guard.js';
 import type { AuthenticatedUser } from '../auth/types/auth.types.js';
 import { CurrentUser } from '../common/current-user.decorator.js';
 import {
-  formatCursor,
+  keysetOrderBy,
+  keysetWhere,
   monthRange,
+  paginate,
   parseCursor,
 } from '../common/pagination.util.js';
 import { APP_TIMEZONE, parseInputValue } from '../common/timezone.util.js';
@@ -92,43 +94,28 @@ export class TransactionsController {
     if (parser) {
       where.email = { is: parser === MANUAL ? null : { parserName: parser } };
     }
-    if (before) {
-      where.OR = [
-        { transactionDate: { lt: before.date } },
-        { transactionDate: before.date, id: { lt: before.id } },
-      ];
-    }
-    if (after) {
-      where.OR = [
-        { transactionDate: { gt: after.date } },
-        { transactionDate: after.date, id: { gt: after.id } },
-      ];
+    const keyset = keysetWhere('transactionDate', { before, after });
+    if (keyset) {
+      where.OR = keyset;
     }
 
-    // ponytail: keyset logic duplicated from EmailsController; extract a shared
-    // helper if a third paginated list shows up.
     // Fetch one extra row to know whether another page exists.
-    const direction = after ? 'asc' : 'desc';
     const rows = await this.prisma.transaction.findMany({
       where,
-      orderBy: [{ transactionDate: direction }, { id: direction }],
+      orderBy: keysetOrderBy('transactionDate', { after }),
       take: PAGE_SIZE + 1,
       select: transactionSelect,
     });
-
-    const hasMore = rows.length > PAGE_SIZE;
-    const page = rows.slice(0, PAGE_SIZE);
-    const ordered = after ? page.reverse() : page;
-    const first = ordered[0];
-    const last = ordered[ordered.length - 1];
-
-    const hasOlder = after ? last !== undefined : hasMore;
-    const hasNewer = after
-      ? hasMore
-      : before !== undefined && first !== undefined;
-
-    const cursorOf = (row: { transactionDate: Date; id: string }) =>
-      formatCursor({ date: row.transactionDate, id: row.id });
+    const {
+      rows: ordered,
+      olderCursor,
+      newerCursor,
+    } = paginate(rows, {
+      before,
+      after,
+      pageSize: PAGE_SIZE,
+      cursorOf: (row) => ({ date: row.transactionDate, id: row.id }),
+    });
 
     return {
       title: 'Transactions',
@@ -145,8 +132,8 @@ export class TransactionsController {
       month: month ? query.month : null,
       category: category ?? null,
       parser: parser ?? null,
-      olderCursor: hasOlder ? cursorOf(last) : null,
-      newerCursor: hasNewer ? cursorOf(first) : null,
+      olderCursor,
+      newerCursor,
     };
   }
 
