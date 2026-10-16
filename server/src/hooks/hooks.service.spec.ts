@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import type { GmailWebhookDto } from './dto/email-webhook.dto.js';
 import { HooksService } from './hooks.service.js';
@@ -8,14 +7,7 @@ import {
   ParseError,
 } from './parser/parser.interface.js';
 
-const email = {
-  messageId: 'msg-1',
-  from: 'notifications@bank.com',
-  subject: 'Compra',
-  body: 'body',
-  bodyHtml: null,
-  receivedAt: new Date(),
-} as unknown as GmailWebhookDto;
+const email = { messageId: 'msg-1' } as unknown as GmailWebhookDto;
 
 const parsed: ParsedTransaction = {
   amount: '10.00',
@@ -28,129 +20,69 @@ const parsed: ParsedTransaction = {
   transactionDate: new Date(),
 };
 
-function makeParser(): BankParser {
-  return {
-    name: 'test-parser',
-    canParse: () => true,
-    parse: () => parsed,
-  };
+function makeParser(parse: BankParser['parse'] = () => parsed): BankParser {
+  return { name: 'test-parser', canParse: () => true, parse };
 }
 
-function uniqueConstraintError() {
-  return new Prisma.PrismaClientKnownRequestError('duplicate', {
-    code: 'P2002',
-    clientVersion: 'test',
-  });
-}
-
-function makePrismaStub(options: {
-  notification?: { id: string } | 'duplicate';
-}) {
-  const tx = {
-    emailNotification: {
-      create:
-        options.notification === 'duplicate'
-          ? vi.fn().mockRejectedValue(uniqueConstraintError())
-          : vi
-              .fn()
-              .mockResolvedValue(options.notification ?? { id: 'notif-1' }),
-      update: vi.fn().mockResolvedValue({}),
-    },
-    transaction: { create: vi.fn().mockResolvedValue({ id: 'txn-1' }) },
-  };
-  return {
-    $transaction: vi.fn((callback: (tx: unknown) => unknown) => callback(tx)),
-    emailNotification: { create: vi.fn() },
-    _tx: tx,
-  };
-}
-
-function makeParserRegistry(parser: BankParser | null) {
-  return { find: vi.fn().mockReturnValue(parser) };
+function makeService(
+  parser: BankParser | null,
+  result: 'created' | 'duplicate' = 'created',
+) {
+  const repository = { store: vi.fn().mockResolvedValue(result) };
+  const registry = { find: vi.fn().mockReturnValue(parser) };
+  const service = new HooksService(repository as any, registry as any);
+  return { service, repository };
 }
 
 describe('HooksService', () => {
-  it('creates the notification, the transaction, and marks it parsed inside one db transaction', async () => {
-    const prisma = makePrismaStub({ notification: { id: 'notif-1' } });
-    const service = new HooksService(
-      prisma as any,
-      makeParserRegistry(makeParser()) as any,
-    );
+  it('stores the parsed transaction under the matched parser', async () => {
+    const { service, repository } = makeService(makeParser());
 
     await service.receiveEmail('user-1', email);
 
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(prisma.emailNotification.create).not.toHaveBeenCalled();
-    expect(prisma._tx.emailNotification.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ userId: 'user-1', messageId: 'msg-1' }),
-      }),
-    );
-    expect(prisma._tx.transaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ userId: 'user-1', amount: '10.00' }),
-      }),
-    );
-    expect(prisma._tx.emailNotification.update).toHaveBeenCalledWith({
-      where: { id: 'notif-1' },
-      data: {
-        parseStatus: 'PARSED',
-        parserName: 'test-parser',
-        transactionId: 'txn-1',
-      },
-      select: { id: true },
+    expect(repository.store).toHaveBeenCalledWith('user-1', email, {
+      parserName: 'test-parser',
+      parsed,
     });
   });
 
-  it('no-ops on duplicate delivery without touching transaction/update', async () => {
-    const prisma = makePrismaStub({ notification: 'duplicate' });
-    const service = new HooksService(
-      prisma as any,
-      makeParserRegistry(makeParser()) as any,
-    );
+  it('stores a null outcome (UNPARSED) when no parser matches', async () => {
+    const { service, repository } = makeService(null);
 
     await service.receiveEmail('user-1', email);
 
-    expect(prisma._tx.transaction.create).not.toHaveBeenCalled();
-    expect(prisma._tx.emailNotification.update).not.toHaveBeenCalled();
+    expect(repository.store).toHaveBeenCalledWith('user-1', email, null);
   });
 
-  it('creates the notification but skips the update when no parser matches', async () => {
-    const prisma = makePrismaStub({ notification: { id: 'notif-1' } });
-    const service = new HooksService(
-      prisma as any,
-      makeParserRegistry(null) as any,
-    );
-
-    await service.receiveEmail('user-1', email);
-
-    expect(prisma._tx.emailNotification.create).toHaveBeenCalled();
-    expect(prisma._tx.transaction.create).not.toHaveBeenCalled();
-    expect(prisma._tx.emailNotification.update).not.toHaveBeenCalled();
-  });
-
-  it('marks the notification failed, inside the same transaction, when parsing throws', async () => {
-    const prisma = makePrismaStub({ notification: { id: 'notif-1' } });
-    const parser: BankParser = {
-      name: 'broken-parser',
-      canParse: () => true,
-      parse: () => {
-        throw new ParseError('bad format');
-      },
-    };
-    const service = new HooksService(
-      prisma as any,
-      makeParserRegistry(parser) as any,
-    );
-
-    await service.receiveEmail('user-1', email);
-
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(prisma._tx.transaction.create).not.toHaveBeenCalled();
-    expect(prisma._tx.emailNotification.update).toHaveBeenCalledWith({
-      where: { id: 'notif-1' },
-      data: { parseStatus: 'FAILED', parserName: 'broken-parser' },
-      select: { id: true },
+  it('stores a failed outcome when parsing throws a ParseError', async () => {
+    const parser = makeParser(() => {
+      throw new ParseError('bad format');
     });
+    const { service, repository } = makeService(parser);
+
+    await service.receiveEmail('user-1', email);
+
+    expect(repository.store).toHaveBeenCalledWith('user-1', email, {
+      parserName: 'test-parser',
+      parsed: null,
+    });
+  });
+
+  it('propagates unexpected parser errors without storing', async () => {
+    const parser = makeParser(() => {
+      throw new Error('boom');
+    });
+    const { service, repository } = makeService(parser);
+
+    await expect(service.receiveEmail('user-1', email)).rejects.toThrow('boom');
+    expect(repository.store).not.toHaveBeenCalled();
+  });
+
+  it('resolves normally on duplicate delivery', async () => {
+    const { service } = makeService(makeParser(), 'duplicate');
+
+    await expect(
+      service.receiveEmail('user-1', email),
+    ).resolves.toBeUndefined();
   });
 });
