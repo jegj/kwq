@@ -41,6 +41,8 @@ export class AuthController {
   ) {
     const user = await this.authService.validateUser(email, password);
     if (!user) {
+      // Not @Render: Nest renders after the handler returns even when we
+      // redirected (success path below), which would double-send.
       reply.status(HttpStatus.UNAUTHORIZED).view('layout', {
         title: 'Log in',
         page: './pages/login',
