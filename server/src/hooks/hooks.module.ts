@@ -4,6 +4,7 @@ import { WebhookTokenGuard } from './guard/webhook-token.guard.js';
 import { HooksController } from './hooks.controller.js';
 import { HooksService } from './hooks.service.js';
 import { ParserRegistry } from './parser/parser.registry.js';
+import { WebhookUserRepository } from './webhook-user.repository.js';
 
 @Module({
   controllers: [HooksController],
@@ -12,6 +13,7 @@ import { ParserRegistry } from './parser/parser.registry.js';
     HooksService,
     EmailNotificationRepository,
     ParserRegistry,
+    WebhookUserRepository,
   ],
   exports: [ParserRegistry],
 })

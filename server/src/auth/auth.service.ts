@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { AuthRepository } from './auth.repository.js';
 import type { AuthenticatedUser } from './types/auth.types.js';
 import { verifyPassword } from './util/password.util.js';
 
@@ -12,13 +12,13 @@ const DUMMY_PASSWORD_HASH = `${'0'.repeat(32)}:${'0'.repeat(128)}`;
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly authRepository: AuthRepository) {}
 
   async validateUser(
     email: string,
     password: string,
   ): Promise<AuthenticatedUser | null> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.authRepository.findByEmail(email);
     if (!user) {
       await verifyPassword(password, DUMMY_PASSWORD_HASH);
       this.logger.warn({ msg: 'Login failed: unknown email', email });
@@ -26,29 +26,23 @@ export class AuthService {
     }
     if (!(await verifyPassword(password, user.passwordHash))) {
       this.logger.warn({ msg: 'Login failed: wrong password', email });
-      await this.prisma.userActivity.create({
-        data: { userId: user.id, action: 'LOGIN_FAILED' },
-      });
+      await this.authRepository.recordActivity(user.id, 'LOGIN_FAILED');
       return null;
     }
     return { id: user.id, role: user.role, email: user.email };
   }
 
   async findSessionUser(id: string): Promise<AuthenticatedUser | null> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.authRepository.findById(id);
     if (!user) return null;
     return { id: user.id, role: user.role, email: user.email };
   }
 
   async recordLogin(userId: string): Promise<void> {
-    await this.prisma.userActivity.create({
-      data: { userId, action: 'LOGIN' },
-    });
+    await this.authRepository.recordActivity(userId, 'LOGIN');
   }
 
   async recordLogout(userId: string): Promise<void> {
-    await this.prisma.userActivity.create({
-      data: { userId, action: 'LOGOUT' },
-    });
+    await this.authRepository.recordActivity(userId, 'LOGOUT');
   }
 }

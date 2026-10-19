@@ -8,26 +8,23 @@ vi.mock('./util/password.util.js', async (importOriginal) => {
   return { ...original, verifyPassword: vi.fn(original.verifyPassword) };
 });
 
-function makePrismaStub(user: unknown) {
+function makeRepositoryStub(user: unknown) {
   return {
-    user: {
-      findUnique: vi.fn().mockResolvedValue(user),
-    },
-    userActivity: {
-      create: vi.fn().mockResolvedValue({}),
-    },
+    findByEmail: vi.fn().mockResolvedValue(user),
+    findById: vi.fn().mockResolvedValue(user),
+    recordActivity: vi.fn().mockResolvedValue(undefined),
   };
 }
 
 describe('AuthService', () => {
   it('returns the user id and role for correct credentials', async () => {
-    const prisma = makePrismaStub({
+    const repository = makeRepositoryStub({
       id: 'user-1',
       role: 'ADMIN',
       email: 'javier@example.com',
       passwordHash: await hashPassword('correct-horse'),
     });
-    const authService = new AuthService(prisma as any);
+    const authService = new AuthService(repository as any);
 
     const result = await authService.validateUser(
       'javier@example.com',
@@ -42,8 +39,8 @@ describe('AuthService', () => {
   });
 
   it('returns null for an unknown email', async () => {
-    const prisma = makePrismaStub(null);
-    const authService = new AuthService(prisma as any);
+    const repository = makeRepositoryStub(null);
+    const authService = new AuthService(repository as any);
 
     const result = await authService.validateUser(
       'nobody@example.com',
@@ -51,12 +48,12 @@ describe('AuthService', () => {
     );
 
     expect(result).toBeNull();
-    expect(prisma.userActivity.create).not.toHaveBeenCalled();
+    expect(repository.recordActivity).not.toHaveBeenCalled();
   });
 
   it('still verifies a password for an unknown email so timing does not reveal it', async () => {
     vi.mocked(verifyPassword).mockClear();
-    const authService = new AuthService(makePrismaStub(null) as any);
+    const authService = new AuthService(makeRepositoryStub(null) as any);
 
     await authService.validateUser('nobody@example.com', 'whatever');
 
@@ -65,12 +62,12 @@ describe('AuthService', () => {
   });
 
   it('returns null for the wrong password', async () => {
-    const prisma = makePrismaStub({
+    const repository = makeRepositoryStub({
       id: 'user-1',
       role: 'ADMIN',
       passwordHash: await hashPassword('correct-horse'),
     });
-    const authService = new AuthService(prisma as any);
+    const authService = new AuthService(repository as any);
 
     const result = await authService.validateUser(
       'javier@example.com',
@@ -78,34 +75,35 @@ describe('AuthService', () => {
     );
 
     expect(result).toBeNull();
-    expect(prisma.userActivity.create).toHaveBeenCalledWith({
-      data: { userId: 'user-1', action: 'LOGIN_FAILED' },
-    });
+    expect(repository.recordActivity).toHaveBeenCalledWith(
+      'user-1',
+      'LOGIN_FAILED',
+    );
   });
 
   it('does not record activity for a successful validation', async () => {
-    const prisma = makePrismaStub({
+    const repository = makeRepositoryStub({
       id: 'user-1',
       role: 'USER',
       email: 'javier@example.com',
       passwordHash: await hashPassword('correct-horse'),
     });
-    const authService = new AuthService(prisma as any);
+    const authService = new AuthService(repository as any);
 
     await authService.validateUser('javier@example.com', 'correct-horse');
 
-    expect(prisma.userActivity.create).not.toHaveBeenCalled();
+    expect(repository.recordActivity).not.toHaveBeenCalled();
   });
 
   describe('findSessionUser', () => {
     it('returns the current id, role and email from the database', async () => {
-      const prisma = makePrismaStub({
+      const repository = makeRepositoryStub({
         id: 'user-1',
         role: 'USER',
         email: 'javier@example.com',
         passwordHash: 'x',
       });
-      const authService = new AuthService(prisma as any);
+      const authService = new AuthService(repository as any);
 
       const result = await authService.findSessionUser('user-1');
 
@@ -114,13 +112,11 @@ describe('AuthService', () => {
         role: 'USER',
         email: 'javier@example.com',
       });
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
-      });
+      expect(repository.findById).toHaveBeenCalledWith('user-1');
     });
 
     it('returns null when the user was deleted', async () => {
-      const authService = new AuthService(makePrismaStub(null) as any);
+      const authService = new AuthService(makeRepositoryStub(null) as any);
 
       expect(await authService.findSessionUser('gone')).toBeNull();
     });

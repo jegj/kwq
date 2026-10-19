@@ -5,12 +5,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import { PrismaService } from '../../prisma/prisma.service.js';
 import { hashWebhookToken } from '../util/webhook-token.util.js';
+import { WebhookUserRepository } from '../webhook-user.repository.js';
 
 @Injectable()
 export class WebhookTokenGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly webhookUsers: WebhookUserRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
@@ -19,9 +19,9 @@ export class WebhookTokenGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { webhookToken: hashWebhookToken(token) },
-    });
+    const user = await this.webhookUsers.findByTokenHash(
+      hashWebhookToken(token),
+    );
     if (!user) {
       throw new UnauthorizedException();
     }

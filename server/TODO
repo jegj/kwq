@@ -2,7 +2,6 @@ TODO: ADD SPENT PER PARSER
 TODO: CHECK WHY SERVICE IS BEING RESTARTED
 TODO: PWA 
 TODO: PUSH NOTIFICATIONS
-TODO: AUTH REPOSITORIES - AuthService (auth/auth.service.ts) and WebhookTokenGuard (hooks/guard/webhook-token.guard.ts) still inject PrismaService directly; move their queries into small repositories so "only repositories touch Prisma" holds everywhere
 TODO: CONFIG MODULE - process.env is read in 9 places (app.module, main, prisma.service, timezone.util, auth.controller, jwt.util), some at import time; add @nestjs/config with a validated schema (DATABASE_URL, JWT_SECRET, PUBLIC_URL, APP_ENV, APP_TIMEZONE...) so boot fails fast and isDev/APP_ENV has one source
 TODO: HEALTH ENDPOINT - add @nestjs/terminus with GET /health that pings the DB (PrismaService), and point Caddy/systemd (infra/) at it
 TODO: WEBHOOK RATE LIMITING - POST /hooks/email hits the DB on every call and is not throttled; apply ThrottlerGuard keyed on the X-Kwq-Token header (not IP, calls come from Google IPs); also decide payload-size hardening (see CLAUDE.md open follow-ups)
