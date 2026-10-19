@@ -13,6 +13,15 @@ async function getCsp() {
 }
 
 describe('security headers', () => {
+  it('uses same-origin referrer policy so form POSTs carry a real Origin', async () => {
+    const app = Fastify();
+    await app.register(fastifyHelmet, helmetOptions);
+    app.get('/', async () => 'ok');
+    const response = await app.inject({ method: 'GET', url: '/' });
+
+    expect(response.headers['referrer-policy']).toBe('same-origin');
+  });
+
   it('restricts scripts, framing, forms and base to the app itself', async () => {
     const csp = await getCsp();
 

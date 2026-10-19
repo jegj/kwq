@@ -4,7 +4,11 @@ import type { FastifyHelmetOptions } from '@fastify/helmet';
 // 'unsafe-inline' (styles only): templates use style="" attributes.
 // img-src https: keeps remote images in the sandboxed email preview (srcdoc
 // iframes inherit this policy).
+// referrerPolicy: helmet's default `no-referrer` makes browsers send `Origin: null`
+// on plain form POSTs (login), which OriginGuard rejects. `same-origin` sends the
+// real Origin to us and still sends no referrer to other sites.
 export const helmetOptions: FastifyHelmetOptions = {
+  referrerPolicy: { policy: 'same-origin' },
   contentSecurityPolicy: {
     useDefaults: false,
     directives: {
