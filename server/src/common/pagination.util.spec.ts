@@ -12,14 +12,14 @@ const ID = '0192a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b';
 
 describe('monthRange', () => {
   it('returns Lima-local month boundaries expressed in UTC', () => {
-    expect(monthRange('2026-09')).toEqual({
+    expect(monthRange('America/Lima', '2026-09')).toEqual({
       gte: new Date('2026-09-01T05:00:00.000Z'),
       lt: new Date('2026-10-01T05:00:00.000Z'),
     });
   });
 
   it('rolls December over to January of the next year', () => {
-    expect(monthRange('2026-12')?.lt).toEqual(
+    expect(monthRange('America/Lima', '2026-12')?.lt).toEqual(
       new Date('2027-01-01T05:00:00.000Z'),
     );
   });
@@ -27,7 +27,7 @@ describe('monthRange', () => {
   it.each([undefined, '', '2026-13', '2026-9', 'nope'])(
     'ignores invalid value %j',
     (value) => {
-      expect(monthRange(value)).toBeUndefined();
+      expect(monthRange('America/Lima', value)).toBeUndefined();
     },
   );
 });

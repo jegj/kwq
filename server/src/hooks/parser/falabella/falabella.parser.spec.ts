@@ -13,7 +13,7 @@ function loadFixture(name: string): GmailWebhookDto {
 }
 
 describe('FalabellaParser', () => {
-  const parser = new FalabellaParser();
+  const parser = new FalabellaParser('America/Lima');
 
   it('parses a PEN CMR consumption email', () => {
     const email = loadFixture('falabella-consumo-pen');

@@ -1,7 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
-import { signAuthToken } from '../src/auth/util/jwt.util.js';
-import { createTestApp } from './bootstrap.js';
+import { createTestApp, signTestToken } from './bootstrap.js';
 
 describe('AppController (e2e)', () => {
   let app: NestFastifyApplication;
@@ -21,7 +20,7 @@ describe('AppController (e2e)', () => {
   });
 
   it('/ (GET) redirects to the dashboard when a valid session cookie is present', async () => {
-    const token = signAuthToken({
+    const token = signTestToken(app, {
       id: 'user-1',
       role: 'USER',
       email: 'javier@example.com',

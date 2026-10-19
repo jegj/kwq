@@ -52,6 +52,7 @@ function serviceWith(rows: unknown[] = [], categories: { id: string }[] = []) {
       repository as any,
       categoriesRepository as any,
       registry as any,
+      { get: () => 'America/Lima' } as any,
     ),
   };
 }

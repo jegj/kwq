@@ -1,4 +1,4 @@
-import { APP_TIMEZONE, toInputValue } from './timezone.util.js';
+import { toInputValue } from './timezone.util.js';
 
 export function formatMoney(amount: string | number, currency: string): string {
   try {
@@ -12,23 +12,22 @@ export function formatMoney(amount: string | number, currency: string): string {
   }
 }
 
-const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
-  timeZone: APP_TIMEZONE,
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-});
-
-export function formatDateTime(date: Date): string {
-  return dateTimeFormat.format(date);
-}
-
-// Value for `<input type="datetime-local">`, in the app zone.
-export function formatInputValue(date: Date): string {
-  return toInputValue(APP_TIMEZONE, date);
+// Date helpers bound to one zone, built once at boot from APP_TIMEZONE.
+export function createDateFormatters(timeZone: string) {
+  const dateTime = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  });
+  return {
+    formatDateTime: (date: Date): string => dateTime.format(date),
+    // Value for `<input type="datetime-local">`, in the app zone.
+    formatInputValue: (date: Date): string => toInputValue(timeZone, date),
+  };
 }
 
 // Banks send merchants in ALL CAPS; mixed-case text is already intentional.

@@ -3,6 +3,7 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyView from '@fastify/view';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   FastifyAdapter,
   type NestFastifyApplication,
@@ -10,6 +11,8 @@ import {
 import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import ejs from 'ejs';
 import { AppModule } from '../src/app.module.js';
+import { signAuthToken } from '../src/auth/util/jwt.util.js';
+import type { EnvironmentVariables } from '../src/config/env.validation.js';
 import { RedirectExceptionFilter } from '../src/auth/redirect/redirect.exception.js';
 import { NotFoundExceptionFilter } from '../src/common/not-found.filter.js';
 import { helmetOptions } from '../src/common/security-headers.js';
@@ -42,4 +45,15 @@ export async function createTestApp(
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;
+}
+
+// Session token signed with the secret the app under test was booted with.
+export function signTestToken(
+  app: NestFastifyApplication,
+  payload: Parameters<typeof signAuthToken>[0],
+): string {
+  return signAuthToken(
+    payload,
+    app.get(ConfigService<EnvironmentVariables, true>).get('JWT_SECRET'),
+  );
 }

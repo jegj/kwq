@@ -1,8 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { AuthService } from '../src/auth/auth.service.js';
-import { signAuthToken } from '../src/auth/util/jwt.util.js';
-import { createTestApp } from './bootstrap.js';
+import { createTestApp, signTestToken } from './bootstrap.js';
 
 describe('AuthController (e2e)', () => {
   let app: NestFastifyApplication;
@@ -34,7 +33,7 @@ describe('AuthController (e2e)', () => {
   });
 
   it('/auth/login (GET) redirects to the dashboard when already authenticated', async () => {
-    const token = signAuthToken({
+    const token = signTestToken(app, {
       id: 'user-1',
       role: 'USER',
       email: 'javier@example.com',

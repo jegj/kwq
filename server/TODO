@@ -2,10 +2,8 @@ TODO: ADD SPENT PER PARSER
 TODO: CHECK WHY SERVICE IS BEING RESTARTED
 TODO: PWA 
 TODO: PUSH NOTIFICATIONS
-TODO: CONFIG MODULE - process.env is read in 9 places (app.module, main, prisma.service, timezone.util, auth.controller, jwt.util), some at import time; add @nestjs/config with a validated schema (DATABASE_URL, JWT_SECRET, PUBLIC_URL, APP_ENV, APP_TIMEZONE...) so boot fails fast and isDev/APP_ENV has one source
 TODO: HEALTH ENDPOINT - add @nestjs/terminus with GET /health that pings the DB (PrismaService), and point Caddy/systemd (infra/) at it
 TODO: WEBHOOK RATE LIMITING - POST /hooks/email hits the DB on every call and is not throttled; apply ThrottlerGuard keyed on the X-Kwq-Token header (not IP, calls come from Google IPs); also decide payload-size hardening (see CLAUDE.md open follow-ups)
 TODO: GLOBAL FILTERS AND PIPE AS PROVIDERS - main.ts does new RedirectExceptionFilter()/NotFoundExceptionFilter() and new ValidationPipe({ whitelist: true }); move them to APP_FILTER/APP_PIPE providers in AppModule so they can use DI and e2e tests (test/bootstrap.ts) match prod; add transform: true and forbidNonWhitelisted: true to the pipe and re-check the query DTOs still behave
 TODO: SESSION GUARD CACHE (optional) - SessionGuard runs a DB query per request to read role/email (intentional, so demotions apply immediately); if it ever matters add a short in-memory TTL cache keyed by user id
-TODO: INJECTABLE JWT SECRET - SECRET in auth/util/jwt.util.ts is read at import time, so tests must set env before importing; wrap signing/verifying in an injectable service (or @nestjs/jwt) fed by the config module
 

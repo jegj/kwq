@@ -5,8 +5,10 @@ import { DashboardService } from './dashboard.service.js';
 // 2026-10-07 12:00 in Lima
 const now = new Date('2026-10-07T17:00:00Z');
 
+const limaConfig = { get: () => 'America/Lima' } as any;
+
 describe('DashboardService.getMonthNav', () => {
-  const service = new DashboardService({} as DashboardRepository);
+  const service = new DashboardService({} as DashboardRepository, limaConfig);
 
   it('defaults to the current Lima month', () => {
     expect(service.getMonthNav(undefined, now).month).toBe('2026-10');
@@ -89,7 +91,7 @@ function serviceWith({
     recentTransactions: vi.fn(async () => recent),
     biggestTransactions: vi.fn(async () => biggest),
   } as unknown as DashboardRepository;
-  return new DashboardService(repository);
+  return new DashboardService(repository, limaConfig);
 }
 
 describe('DashboardService.getSummaries', () => {

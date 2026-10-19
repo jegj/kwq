@@ -9,8 +9,10 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { EnvironmentVariables } from '../config/env.validation.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { GuestGuard } from './guard/guest.guard.js';
@@ -22,7 +24,10 @@ const LOGIN_ATTEMPTS_PER_MINUTE = 5;
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService<EnvironmentVariables, true>,
+  ) {}
 
   @Get('login')
   @UseGuards(GuestGuard)
@@ -53,12 +58,12 @@ export class AuthController {
     }
     await this.authService.recordLogin(user.id);
 
-    const token = signAuthToken(user);
+    const token = signAuthToken(user, this.config.get('JWT_SECRET'));
     reply.setCookie(SESSION_COOKIE, token, {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.APP_ENV !== 'development',
+      secure: this.config.get('APP_ENV') !== 'development',
       maxAge: SESSION_MAX_AGE_SECONDS,
     });
     reply.status(HttpStatus.FOUND).redirect('/app/dashboard');
@@ -70,7 +75,9 @@ export class AuthController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
     const token = request.cookies?.session;
-    const payload = token ? verifyAuthToken(token) : null;
+    const payload = token
+      ? verifyAuthToken(token, this.config.get('JWT_SECRET'))
+      : null;
     if (payload) {
       await this.authService.recordLogout(payload.id);
     }

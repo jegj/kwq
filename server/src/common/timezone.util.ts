@@ -1,7 +1,7 @@
-// The one place that knows which zone the bank emails and the users live in.
-// Postgres stores plain instants (timestamptz); this zone only matters when
-// reading zone-less text (emails, form inputs) or showing/bucketing by local time.
-export const APP_TIMEZONE = process.env.APP_TIMEZONE ?? 'America/Lima';
+// Pure zone math: callers pass the zone (APP_TIMEZONE, read once through
+// ConfigService). Postgres stores plain instants (timestamptz); a zone only
+// matters when reading zone-less text (emails, form inputs) or showing/bucketing
+// by local time.
 
 const INPUT_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 
@@ -19,10 +19,7 @@ function wallClock(timeZone: string, instant: Date) {
       .formatToParts(instant)
       .map(({ type, value }) => [type, Number(value)]),
   );
-  return parts as Record<
-    'year' | 'month' | 'day' | 'hour' | 'minute',
-    number
-  >;
+  return parts as Record<'year' | 'month' | 'day' | 'hour' | 'minute', number>;
 }
 
 function offsetMs(timeZone: string, instant: Date): number {

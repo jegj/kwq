@@ -13,7 +13,7 @@ function loadFixture(name: string): GmailWebhookDto {
 }
 
 describe('BcpParser', () => {
-  const parser = new BcpParser();
+  const parser = new BcpParser('America/Lima');
 
   it('parses a USD credit card consumption email', () => {
     const email = loadFixture('bcp-consumo');

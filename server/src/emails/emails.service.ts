@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ParseStatus } from '@prisma/client';
 import {
   monthRange,
   paginate,
   parseCursor,
 } from '../common/pagination.util.js';
+import type { EnvironmentVariables } from '../config/env.validation.js';
 import { ParserRegistry } from '../hooks/parser/parser.registry.js';
 import type { EmailsQueryDto } from './dto/emails-query.dto.js';
 import { EmailsRepository } from './emails.repository.js';
@@ -16,10 +18,11 @@ export class EmailsService {
   constructor(
     private readonly repository: EmailsRepository,
     private readonly parserRegistry: ParserRegistry,
+    private readonly config: ConfigService<EnvironmentVariables, true>,
   ) {}
 
   async list(userId: string, query: EmailsQueryDto) {
-    const month = monthRange(query.month);
+    const month = monthRange(this.config.get('APP_TIMEZONE'), query.month);
     const after = parseCursor(query.after);
     // ponytail: ?after wins over ?before if both are sent.
     const before = after ? undefined : parseCursor(query.before);

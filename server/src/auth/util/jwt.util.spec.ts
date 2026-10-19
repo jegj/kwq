@@ -1,57 +1,21 @@
 import jwt from 'jsonwebtoken';
 import { describe, expect, it } from 'vitest';
-import {
-  resolveJwtSecret,
-  signAuthToken,
-  verifyAuthToken,
-} from './jwt.util.js';
+import { signAuthToken, verifyAuthToken } from './jwt.util.js';
 
-describe('resolveJwtSecret', () => {
-  it('throws in production when JWT_SECRET is missing', () => {
-    expect(() => resolveJwtSecret('production', undefined)).toThrow(
-      /JWT_SECRET/,
-    );
-  });
-
-  it('falls back to a dev secret only in development', () => {
-    expect(resolveJwtSecret('development', undefined)).toBe(
-      'dev-only-secret-change-me',
-    );
-  });
-
-  it('throws in staging when JWT_SECRET is missing', () => {
-    expect(() => resolveJwtSecret('staging', undefined)).toThrow(/JWT_SECRET/);
-  });
-
-  it('throws when APP_ENV is unset and JWT_SECRET is missing', () => {
-    expect(() => resolveJwtSecret(undefined, undefined)).toThrow(/JWT_SECRET/);
-  });
-
-  it('rejects a short secret outside development', () => {
-    expect(() => resolveJwtSecret('production', 'too-short')).toThrow(
-      /at least 32/,
-    );
-  });
-
-  it('uses a long enough secret outside development', () => {
-    const secret = 'a'.repeat(32);
-    expect(resolveJwtSecret('production', secret)).toBe(secret);
-  });
-
-  it('accepts a short explicit secret in development', () => {
-    expect(resolveJwtSecret('development', 'short')).toBe('short');
-  });
-});
+const SECRET = 'test-secret-with-enough-length-for-hs256';
 
 describe('jwt.util', () => {
   it('verifies a token signed with the same payload', () => {
-    const token = signAuthToken({
-      id: 'user-1',
-      role: 'ADMIN',
-      email: 'javier@example.com',
-    });
+    const token = signAuthToken(
+      {
+        id: 'user-1',
+        role: 'ADMIN',
+        email: 'javier@example.com',
+      },
+      SECRET,
+    );
 
-    const payload = verifyAuthToken(token);
+    const payload = verifyAuthToken(token, SECRET);
 
     expect(payload).toEqual({
       id: 'user-1',
@@ -61,24 +25,36 @@ describe('jwt.util', () => {
   });
 
   it('rejects a tampered token', () => {
-    const token = signAuthToken({
-      id: 'user-1',
-      role: 'ADMIN',
-      email: 'javier@example.com',
-    });
+    const token = signAuthToken(
+      {
+        id: 'user-1',
+        role: 'ADMIN',
+        email: 'javier@example.com',
+      },
+      SECRET,
+    );
 
-    const payload = verifyAuthToken(`${token}tampered`);
+    const payload = verifyAuthToken(`${token}tampered`, SECRET);
 
     expect(payload).toBeNull();
+  });
+
+  it('rejects a token signed with a different secret', () => {
+    const token = signAuthToken(
+      { id: 'user-1', role: 'ADMIN', email: 'javier@example.com' },
+      'another-secret-with-enough-length-12345',
+    );
+
+    expect(verifyAuthToken(token, SECRET)).toBeNull();
   });
 
   it('rejects a token signed with a non-HS256 algorithm', () => {
     const token = jwt.sign(
       { id: 'user-1', role: 'ADMIN', email: 'javier@example.com' },
-      'dev-only-secret-change-me',
+      SECRET,
       { algorithm: 'HS512' },
     );
 
-    expect(verifyAuthToken(token)).toBeNull();
+    expect(verifyAuthToken(token, SECRET)).toBeNull();
   });
 });

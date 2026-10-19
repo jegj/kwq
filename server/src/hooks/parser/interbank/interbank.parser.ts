@@ -1,5 +1,5 @@
 import { OperationType } from '@prisma/client';
-import { APP_TIMEZONE, zonedToUtc } from '../../../common/timezone.util.js';
+import { zonedToUtc } from '../../../common/timezone.util.js';
 import type { GmailWebhookDto } from '../../dto/email-webhook.dto.js';
 import {
   type BankParser,
@@ -65,7 +65,7 @@ function toHour24(hourText: string, meridiem: string): number {
   return meridiem.toUpperCase() === 'PM' ? hour + 12 : hour;
 }
 
-function parseCardDate(body: string): Date {
+function parseCardDate(timeZone: string, body: string): Date {
   const date = requireField(body, 'Fecha').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   const time = requireField(body, 'Hora').match(/^(\d{1,2}):(\d{2}) (AM|PM)$/i);
   if (!date || !time) throw new ParseError('Unrecognized date/time format');
@@ -74,7 +74,7 @@ function parseCardDate(body: string): Date {
 
   // Zone-less bank text: local to APP_TIMEZONE.
   return zonedToUtc(
-    APP_TIMEZONE,
+    timeZone,
     Number(year),
     Number(month) - 1,
     Number(day),
@@ -84,7 +84,7 @@ function parseCardDate(body: string): Date {
 }
 
 // e.g. "29 Sep 2026 11:12 AM"
-function parsePlinDate(body: string): Date {
+function parsePlinDate(timeZone: string, body: string): Date {
   const match = requirePlinField(body, 'Fecha y hora').match(
     /^(\d{1,2}) (\p{L}{3}) (\d{4}) (\d{1,2}):(\d{2}) (AM|PM)$/iu,
   );
@@ -94,7 +94,7 @@ function parsePlinDate(body: string): Date {
   const [, day, , year, hour, minute, meridiem] = match;
 
   return zonedToUtc(
-    APP_TIMEZONE,
+    timeZone,
     Number(year),
     month,
     Number(day),
@@ -103,7 +103,7 @@ function parsePlinDate(body: string): Date {
   );
 }
 
-function parseCardEmail(body: string): ParsedTransaction {
+function parseCardEmail(timeZone: string, body: string): ParsedTransaction {
   return {
     ...parseAmount(requireField(body, 'Monto')),
     merchant: requireField(body, 'Comercio'),
@@ -112,11 +112,11 @@ function parseCardEmail(body: string): ParsedTransaction {
     operationNumber: null,
     // Interbank masks all but the last 3 digits ("****215").
     cardLastFour: matchField(body, 'Tarjeta')?.match(/\*+(\d+)$/)?.[1] ?? null,
-    transactionDate: parseCardDate(body),
+    transactionDate: parseCardDate(timeZone, body),
   };
 }
 
-function parsePlinEmail(body: string): ParsedTransaction {
+function parsePlinEmail(timeZone: string, body: string): ParsedTransaction {
   return {
     ...parseAmount(requirePlinField(body, 'Monto y moneda')),
     merchant: requirePlinField(body, 'Destinatario'),
@@ -125,12 +125,14 @@ function parsePlinEmail(body: string): ParsedTransaction {
     operationNumber: requirePlinField(body, 'Código de operación'),
     // Paid from an account, not a card.
     cardLastFour: null,
-    transactionDate: parsePlinDate(body),
+    transactionDate: parsePlinDate(timeZone, body),
   };
 }
 
 export class InterbankParser implements BankParser {
   readonly name = 'interbank';
+
+  constructor(private readonly timeZone: string) {}
 
   canParse(email: GmailWebhookDto): boolean {
     return CARD_SUBJECT.test(email.subject) || PLIN_SUBJECT.test(email.subject);
@@ -138,7 +140,7 @@ export class InterbankParser implements BankParser {
 
   parse(email: GmailWebhookDto): ParsedTransaction {
     return PLIN_SUBJECT.test(email.subject)
-      ? parsePlinEmail(email.body)
-      : parseCardEmail(email.body);
+      ? parsePlinEmail(this.timeZone, email.body)
+      : parseCardEmail(this.timeZone, email.body);
   }
 }

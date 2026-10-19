@@ -3,13 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CategoriesRepository } from '../categories/categories.repository.js';
 import {
   monthRange,
   paginate,
   parseCursor,
 } from '../common/pagination.util.js';
-import { APP_TIMEZONE, parseInputValue } from '../common/timezone.util.js';
+import { parseInputValue } from '../common/timezone.util.js';
+import type { EnvironmentVariables } from '../config/env.validation.js';
 import { ParserRegistry } from '../hooks/parser/parser.registry.js';
 import type { TransactionDto } from './dto/transaction.dto.js';
 import type { TransactionsQueryDto } from './dto/transactions-query.dto.js';
@@ -36,10 +38,11 @@ export class TransactionsService {
     private readonly repository: TransactionsRepository,
     private readonly categoriesRepository: CategoriesRepository,
     private readonly parserRegistry: ParserRegistry,
+    private readonly config: ConfigService<EnvironmentVariables, true>,
   ) {}
 
   async list(userId: string, query: TransactionsQueryDto) {
-    const month = monthRange(query.month);
+    const month = monthRange(this.config.get('APP_TIMEZONE'), query.month);
     const after = parseCursor(query.after);
     // ponytail: ?after wins over ?before if both are sent.
     const before = after ? undefined : parseCursor(query.before);
@@ -139,7 +142,10 @@ export class TransactionsService {
   }
 
   private toData(body: TransactionDto) {
-    const transactionDate = parseInputValue(APP_TIMEZONE, body.transactionDate);
+    const transactionDate = parseInputValue(
+      this.config.get('APP_TIMEZONE'),
+      body.transactionDate,
+    );
     if (!transactionDate) {
       throw new BadRequestException('Invalid transaction date.');
     }

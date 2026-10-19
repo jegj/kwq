@@ -1,5 +1,5 @@
 import { OperationType } from '@prisma/client';
-import { APP_TIMEZONE, zonedToUtc } from '../../../common/timezone.util.js';
+import { zonedToUtc } from '../../../common/timezone.util.js';
 import type { GmailWebhookDto } from '../../dto/email-webhook.dto.js';
 import {
   type BankParser,
@@ -57,7 +57,7 @@ function parseAmount(body: string): { amount: string; currency: string } {
   };
 }
 
-function parseTransactionDate(body: string): Date {
+function parseTransactionDate(timeZone: string, body: string): Date {
   const date = requireField(body, 'Fecha').match(/^(\d{1,2})-(\w+)-(\d{4})$/);
   const time = requireField(body, 'Hora').match(/^(\d{1,2}):(\d{2})$/);
   if (!date || !time) throw new ParseError('Unrecognized date/time format');
@@ -69,7 +69,7 @@ function parseTransactionDate(body: string): Date {
 
   // Zone-less bank text (24h): local to APP_TIMEZONE.
   return zonedToUtc(
-    APP_TIMEZONE,
+    timeZone,
     Number(year),
     month,
     Number(day),
@@ -80,6 +80,8 @@ function parseTransactionDate(body: string): Date {
 
 export class FalabellaParser implements BankParser {
   readonly name = 'falabella';
+
+  constructor(private readonly timeZone: string) {}
 
   canParse(email: GmailWebhookDto): boolean {
     if (!email.from.toLowerCase().includes('bancofalabella')) return false;
@@ -101,7 +103,7 @@ export class FalabellaParser implements BankParser {
       operationNumber: matchField(body, 'Número de operación'),
       cardLastFour:
         matchField(body, 'Tarjeta')?.match(/\*+(\d{4})$/)?.[1] ?? null,
-      transactionDate: parseTransactionDate(body),
+      transactionDate: parseTransactionDate(this.timeZone, body),
     };
   }
 }

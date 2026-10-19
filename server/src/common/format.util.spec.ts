@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTime, formatMoney, titleCase } from './format.util.js';
+import { createDateFormatters, formatMoney, titleCase } from './format.util.js';
 
 // Intl uses a non-breaking space between symbol and number.
 const plain = (text: string) => text.replace(/ /g, ' ');
@@ -18,10 +18,26 @@ describe('formatMoney', () => {
   });
 });
 
-describe('formatDateTime', () => {
+describe('createDateFormatters', () => {
+  const { formatDateTime, formatInputValue } =
+    createDateFormatters('America/Lima');
+
   it('renders Lima local time, 24h, without seconds', () => {
     expect(formatDateTime(new Date('2026-10-15T15:15:42Z'))).toBe(
       '15 Oct 2026, 10:15',
+    );
+  });
+
+  it('formats datetime-local input values in the given zone', () => {
+    expect(formatInputValue(new Date('2026-10-15T15:15:42Z'))).toBe(
+      '2026-10-15T10:15',
+    );
+  });
+
+  it('follows the zone it was built with', () => {
+    const tokyo = createDateFormatters('Asia/Tokyo');
+    expect(tokyo.formatDateTime(new Date('2026-10-15T15:15:42Z'))).toBe(
+      '16 Oct 2026, 00:15',
     );
   });
 });

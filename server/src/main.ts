@@ -5,6 +5,7 @@ import fastifyHelmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -16,13 +17,13 @@ import { AppModule, ObserveInstrument } from './app.module.js';
 import { RedirectExceptionFilter } from './auth/redirect/redirect.exception.js';
 import { createAssetUrl } from './common/asset-url.util.js';
 import {
-  formatDateTime,
-  formatInputValue,
+  createDateFormatters,
   formatMoney,
   titleCase,
 } from './common/format.util.js';
 import { NotFoundExceptionFilter } from './common/not-found.filter.js';
 import { helmetOptions } from './common/security-headers.js';
+import type { EnvironmentVariables } from './config/env.validation.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -39,6 +40,7 @@ async function bootstrap() {
       bufferLogs: true,
     },
   );
+  const config = app.get(ConfigService<EnvironmentVariables, true>);
   app.useLogger(app.get(Logger));
   app.enableShutdownHooks();
   app.useGlobalFilters(
@@ -51,7 +53,11 @@ async function bootstrap() {
     engine: { ejs },
     root: join(import.meta.dirname, 'views'),
     defaultContext: {
-      fmt: { formatMoney, formatDateTime, formatInputValue, titleCase },
+      fmt: {
+        formatMoney,
+        titleCase,
+        ...createDateFormatters(config.get('APP_TIMEZONE')),
+      },
       asset: createAssetUrl(
         join(import.meta.dirname, 'public', 'manifest.json'),
       ),
@@ -64,6 +70,7 @@ async function bootstrap() {
     prefix: '/assets/',
   });
 
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+  const port: number = config.get('PORT');
+  await app.listen(port, '0.0.0.0');
 }
 await bootstrap();

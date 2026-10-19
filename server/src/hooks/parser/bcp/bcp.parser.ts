@@ -1,5 +1,5 @@
 import { OperationType } from '@prisma/client';
-import { APP_TIMEZONE, zonedToUtc } from '../../../common/timezone.util.js';
+import { zonedToUtc } from '../../../common/timezone.util.js';
 import type { GmailWebhookDto } from '../../dto/email-webhook.dto.js';
 import {
   type BankParser,
@@ -61,7 +61,7 @@ function parseAmount(body: string): { amount: string; currency: string } {
   return { amount: rawAmount.replace(/,/g, ''), currency };
 }
 
-function parseTransactionDate(body: string): Date {
+function parseTransactionDate(timeZone: string, body: string): Date {
   const raw = matchField(body, /Fecha y hora \*([^*]+)\*/);
   if (!raw) {
     throw new ParseError('Could not find transaction date in email body');
@@ -82,7 +82,7 @@ function parseTransactionDate(body: string): Date {
 
   // The bank's "Fecha y hora" carries no zone: it is local to APP_TIMEZONE.
   return zonedToUtc(
-    APP_TIMEZONE,
+    timeZone,
     Number(year),
     month,
     Number(day),
@@ -93,6 +93,8 @@ function parseTransactionDate(body: string): Date {
 
 export class BcpParser implements BankParser {
   readonly name = 'bcp';
+
+  constructor(private readonly timeZone: string) {}
 
   canParse(email: GmailWebhookDto): boolean {
     // Keep in sync with BANKS.bcp.shouldTrack in kwq_watcher/banks.gs.
@@ -134,7 +136,7 @@ export class BcpParser implements BankParser {
       operationType: matchOperationType(body),
       operationNumber,
       cardLastFour,
-      transactionDate: parseTransactionDate(body),
+      transactionDate: parseTransactionDate(this.timeZone, body),
     };
   }
 }

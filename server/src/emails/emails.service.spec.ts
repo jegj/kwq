@@ -28,7 +28,11 @@ function serviceWith(rows: unknown[] = []) {
   const registry = { names: ['bcp', 'interbank', 'falabella'] };
   return {
     repository,
-    service: new EmailsService(repository as any, registry as any),
+    service: new EmailsService(
+      repository as any,
+      registry as any,
+      { get: () => 'America/Lima' } as any,
+    ),
   };
 }
 

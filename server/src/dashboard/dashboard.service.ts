@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { monthRange } from '../common/pagination.util.js';
-import { APP_TIMEZONE, currentMonthIn } from '../common/timezone.util.js';
+import { currentMonthIn } from '../common/timezone.util.js';
+import type { EnvironmentVariables } from '../config/env.validation.js';
 import {
   type CategoryTotal,
   type DailyTotalRow,
@@ -26,12 +28,6 @@ const FALLBACK_COLORS = [
 ];
 
 const LIST_SIZE = 5;
-const dateLabel = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  timeZone: APP_TIMEZONE,
-});
-
 const MONTH_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])$/;
 
 function formatMonth(year: number, monthIndex: number): string {
@@ -80,6 +76,7 @@ function buildCategories(rows: CategoryTotal[]): CategorySlice[] {
 function toItem(
   row: TransactionRow,
   colorByName: Map<string, string>,
+  dateLabel: Intl.DateTimeFormat,
 ): TransactionItem {
   return {
     id: row.id,
@@ -98,18 +95,34 @@ function deltaPercent(total: number, previousTotal: number): number | null {
   return Math.round(((total - previousTotal) / previousTotal) * 1000) / 10;
 }
 
-function requireMonthRange(month: string): { gte: Date; lt: Date } {
-  const range = monthRange(month);
+function requireMonthRange(
+  timeZone: string,
+  month: string,
+): { gte: Date; lt: Date } {
+  const range = monthRange(timeZone, month);
   if (!range) throw new Error(`Invalid month: ${month}`);
   return range;
 }
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly repository: DashboardRepository) {}
+  private readonly timeZone: string;
+  private readonly dateLabel: Intl.DateTimeFormat;
+
+  constructor(
+    private readonly repository: DashboardRepository,
+    config: ConfigService<EnvironmentVariables, true>,
+  ) {
+    this.timeZone = config.get('APP_TIMEZONE');
+    this.dateLabel = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: this.timeZone,
+    });
+  }
 
   getMonthNav(requested: string | undefined, now = new Date()): MonthNav {
-    const current = currentMonthIn(APP_TIMEZONE, now);
+    const current = currentMonthIn(this.timeZone, now);
 
     const requestedMonth =
       requested && MONTH_PATTERN.test(requested) ? requested : null;
@@ -137,8 +150,11 @@ export class DashboardService {
     month: string,
   ): Promise<CurrencySummary[]> {
     const [year, monthNumber] = month.split('-').map(Number);
-    const range = requireMonthRange(month);
-    const previousRange = requireMonthRange(formatMonth(year, monthNumber - 2));
+    const range = requireMonthRange(this.timeZone, month);
+    const previousRange = requireMonthRange(
+      this.timeZone,
+      formatMonth(year, monthNumber - 2),
+    );
     const [
       current,
       previous,
@@ -156,7 +172,7 @@ export class DashboardService {
       this.repository.biggestTransactions(userId, range, LIST_SIZE),
       this.repository.uncategorizedCounts(userId, range),
       this.repository.topMerchants(userId, range, LIST_SIZE),
-      this.repository.dailyTotals(userId, range),
+      this.repository.dailyTotals(userId, range, this.timeZone),
     ]);
 
     const previousTotals = new Map(
@@ -172,7 +188,8 @@ export class DashboardService {
         const colorByName = new Map(
           categories.map((category) => [category.name, category.color]),
         );
-        const item = (row: TransactionRow) => toItem(row, colorByName);
+        const item = (row: TransactionRow) =>
+          toItem(row, colorByName, this.dateLabel);
         return {
           currency,
           total,

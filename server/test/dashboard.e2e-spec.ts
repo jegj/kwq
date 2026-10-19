@@ -1,9 +1,8 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { AuthService } from '../src/auth/auth.service.js';
-import { signAuthToken } from '../src/auth/util/jwt.util.js';
 import { DashboardService } from '../src/dashboard/dashboard.service.js';
-import { createTestApp } from './bootstrap.js';
+import { createTestApp, signTestToken } from './bootstrap.js';
 
 describe('DashboardController (e2e)', () => {
   let app: NestFastifyApplication;
@@ -45,7 +44,7 @@ describe('DashboardController (e2e)', () => {
   });
 
   it('/app/dashboard (GET) renders the dashboard for a valid session cookie', async () => {
-    const token = signAuthToken({
+    const token = signTestToken(app, {
       id: 'user-1',
       role: 'USER',
       email: 'javier@example.com',

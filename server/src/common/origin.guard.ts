@@ -13,7 +13,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 // PUBLIC_URL is the origin users reach the app at (the Caddy domain in prod).
 export function resolveAllowedOrigin(
   publicUrl: string | undefined,
-  port: string | undefined,
+  port: string | number | undefined,
 ): string {
   return new URL(publicUrl || `http://localhost:${port ?? 3000}`).origin;
 }

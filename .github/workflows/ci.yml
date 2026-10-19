@@ -9,7 +9,6 @@ jobs:
   check:
     runs-on: ubuntu-latest
     env:
-      APP_ENV: development # jwt.util throws at import without JWT_SECRET otherwise
       DATABASE_URL: postgresql://kwq:kwq@localhost:5432/kwq_dev # only needed so prisma generate can load its config
     steps:
       - uses: actions/checkout@v4

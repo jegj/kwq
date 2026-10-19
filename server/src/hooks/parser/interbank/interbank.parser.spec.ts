@@ -13,7 +13,7 @@ function loadFixture(name: string): GmailWebhookDto {
 }
 
 describe('InterbankParser', () => {
-  const parser = new InterbankParser();
+  const parser = new InterbankParser('America/Lima');
 
   it('parses a USD card consumption email', () => {
     const email = loadFixture('interbank-consumo-usd');

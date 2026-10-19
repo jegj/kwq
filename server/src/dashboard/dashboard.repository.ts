@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APP_TIMEZONE } from '../common/timezone.util.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface CurrencyTotal {
@@ -142,12 +141,13 @@ export class DashboardRepository {
   dailyTotals(
     userId: string,
     range: { gte: Date; lt: Date },
+    timeZone: string,
   ): Promise<DailyTotalRow[]> {
     return this.prisma.$queryRaw<DailyTotalRow[]>`
       SELECT
         currency,
         extract(
-          day FROM transaction_date AT TIME ZONE ${APP_TIMEZONE}::text
+          day FROM transaction_date AT TIME ZONE ${timeZone}::text
         )::int AS day,
         round(sum(amount), 2)::float8 AS total
       FROM transaction

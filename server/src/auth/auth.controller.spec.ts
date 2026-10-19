@@ -1,5 +1,5 @@
 import type { FastifyReply } from 'fastify';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AuthController } from './auth.controller.js';
 
 function fakeReply(): FastifyReply {
@@ -12,11 +12,21 @@ function fakeReply(): FastifyReply {
   return reply as any;
 }
 
+const SECRET = 'test-secret-with-enough-length-for-hs256';
+
+function fakeConfig(appEnv = 'development') {
+  const values: Record<string, string> = {
+    APP_ENV: appEnv,
+    JWT_SECRET: SECRET,
+  };
+  return { get: (key: string) => values[key] } as any;
+}
+
 describe('AuthController', () => {
   describe('login', () => {
     it('re-renders the login page with an error on invalid credentials', async () => {
       const authService = { validateUser: vi.fn().mockResolvedValue(null) };
-      const controller = new AuthController(authService as any);
+      const controller = new AuthController(authService as any, fakeConfig());
       const reply = fakeReply();
 
       await controller.login(
@@ -36,12 +46,7 @@ describe('AuthController', () => {
     });
 
     describe('session cookie', () => {
-      const originalAppEnv = process.env.APP_ENV;
-      afterEach(() => {
-        process.env.APP_ENV = originalAppEnv;
-      });
-
-      async function loginCookieOptions() {
+      async function loginCookieOptions(appEnv: string) {
         const authService = {
           validateUser: vi
             .fn()
@@ -49,7 +54,7 @@ describe('AuthController', () => {
           recordLogin: vi.fn(),
         };
         const reply = fakeReply();
-        await new AuthController(authService as any).login(
+        await new AuthController(authService as any, fakeConfig(appEnv)).login(
           { email: 'a@b.co', password: 'pw' },
           reply,
         );
@@ -57,16 +62,16 @@ describe('AuthController', () => {
       }
 
       it('is Secure outside development and lasts 7 days', async () => {
-        process.env.APP_ENV = 'production';
-        expect(await loginCookieOptions()).toMatchObject({
+        expect(await loginCookieOptions('production')).toMatchObject({
           secure: true,
           maxAge: 7 * 24 * 60 * 60,
         });
       });
 
       it('is not Secure in development so http://localhost works', async () => {
-        process.env.APP_ENV = 'development';
-        expect(await loginCookieOptions()).toMatchObject({ secure: false });
+        expect(await loginCookieOptions('development')).toMatchObject({
+          secure: false,
+        });
       });
     });
   });
