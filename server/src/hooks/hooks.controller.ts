@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { SkipOriginCheck } from '../common/skip-origin-check.decorator.js';
 import { GmailWebhookDto } from './dto/email-webhook.dto.js';
+import { WebhookThrottlerGuard } from './guard/webhook-throttler.guard.js';
 import { WebhookTokenGuard } from './guard/webhook-token.guard.js';
 import { HooksService } from './hooks.service.js';
 import { HooksExceptionFilter } from './hooks-exception.filter.js';
@@ -23,7 +24,8 @@ export class HooksController {
 
   @Post('email')
   @HttpCode(200)
-  @UseGuards(WebhookTokenGuard)
+  // Throttler first: it must reject before the token guard's DB lookup.
+  @UseGuards(WebhookThrottlerGuard, WebhookTokenGuard)
   async receiveGmail(
     @Body() payload: GmailWebhookDto,
     @WebhookUser() webhookUser: WebhookAuthenticatedUser,

@@ -302,5 +302,9 @@ filtering on lists for v1 (exception: `/app/emails` cursor + `month`/`status`/`p
 
 - Invite-link UX details (expiry, password policy) for the CLI/seed script
   path — the web admin creation flow is now decided (see URL design above).
-- Webhook endpoint hardening (rate limiting, payload size limits) — not
-  discussed, default to sane Nest conventions unless revisited.
+- Webhook hardening is decided: `POST /hooks/email` is throttled (60/min) by
+  `WebhookThrottlerGuard`, keyed on the hashed `X-Kwq-Token` (calls come from
+  shared Google IPs) and listed before `WebhookTokenGuard` so it rejects before
+  the DB lookup. Payload size needs nothing more: Fastify `bodyLimit` is 1 MiB
+  and the DTO caps every field. Known gap: random invalid tokens each get a
+  fresh bucket and still hit the lookup.

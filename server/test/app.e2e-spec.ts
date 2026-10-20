@@ -41,6 +41,28 @@ describe('AppController (e2e)', () => {
       .expect(401);
   });
 
+  it('/hooks/email (POST) is rate limited per token, not per IP', async () => {
+    const server = app.getHttpServer();
+    for (let hit = 0; hit < 60; hit++) {
+      await request(server)
+        .post('/hooks/email')
+        .set('X-Kwq-Token', 'noisy-token')
+        .send({})
+        .expect(401);
+    }
+
+    await request(server)
+      .post('/hooks/email')
+      .set('X-Kwq-Token', 'noisy-token')
+      .send({})
+      .expect(429);
+    await request(server)
+      .post('/hooks/email')
+      .set('X-Kwq-Token', 'other-token')
+      .send({})
+      .expect(401);
+  });
+
   it('/health (GET) is public and reports ok', async () => {
     const response = await request(app.getHttpServer())
       .get('/health')
