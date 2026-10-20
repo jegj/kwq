@@ -1,8 +1,8 @@
 import { Controller, Get, HttpStatus, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { EnvironmentVariables } from './config/env.validation.js';
 import { verifyAuthToken } from './auth/util/jwt.util.js';
+import type { EnvironmentVariables } from './config/env.validation.js';
 
 @Controller()
 export class AppController {

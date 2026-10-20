@@ -6,8 +6,8 @@ import {
   IsString,
   IsUrl,
   MinLength,
-  validateSync,
   ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 const APP_ENVS = ['development', 'staging', 'production'] as const;

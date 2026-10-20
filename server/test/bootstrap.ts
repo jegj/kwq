@@ -11,8 +11,8 @@ import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import ejs from 'ejs';
 import { AppModule } from '../src/app.module.js';
 import { signAuthToken } from '../src/auth/util/jwt.util.js';
-import type { EnvironmentVariables } from '../src/config/env.validation.js';
 import { helmetOptions } from '../src/common/security-headers.js';
+import type { EnvironmentVariables } from '../src/config/env.validation.js';
 
 export async function createTestApp(
   configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder,

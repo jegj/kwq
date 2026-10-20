@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { ServiceUnavailableException } from '@nestjs/common';
+import { describe, expect, it, vi } from 'vitest';
 import { HealthController } from './health.controller.js';
 import type { HealthRepository } from './health.repository.js';
 

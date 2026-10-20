@@ -37,14 +37,16 @@ article {
 .app-sidebar a {
   border-radius: var(--pico-border-radius);
   border-left: 0;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .app-sidebar a:hover {
   background: var(--pico-card-background-color);
 }
 
-.app-sidebar a[aria-current='page'] {
+.app-sidebar a[aria-current="page"] {
   background: color-mix(in srgb, var(--pico-primary) 14%, transparent);
 }
 

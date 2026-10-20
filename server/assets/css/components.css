@@ -1,19 +1,17 @@
 @media (max-width: 480px) {
-  .webhook-token-reveal [role='group'] {
+  .webhook-token-reveal [role="group"] {
     flex-direction: column;
     align-items: stretch;
   }
 
   .webhook-token-reveal code {
-    border-radius: var(--pico-border-radius) var(--pico-border-radius)
-      0 0;
+    border-radius: var(--pico-border-radius) var(--pico-border-radius) 0 0;
   }
 
-  .webhook-token-reveal [role='group'] button {
+  .webhook-token-reveal [role="group"] button {
     width: 100%;
     margin: 0;
-    border-radius: 0 0 var(--pico-border-radius)
-      var(--pico-border-radius);
+    border-radius: 0 0 var(--pico-border-radius) var(--pico-border-radius);
   }
 
   dialog article {
@@ -213,17 +211,26 @@
   letter-spacing: 0.02em;
   color: hsl(var(--parser-hue) 80% calc(78% + var(--parser-shade)));
   background: hsl(var(--parser-hue) 55% calc(40% + var(--parser-shade)) / 0.18);
-  border: 1px solid hsl(var(--parser-hue) 55% calc(55% + var(--parser-shade)) / 0.45);
+  border: 1px solid
+    hsl(var(--parser-hue) 55% calc(55% + var(--parser-shade)) / 0.45);
 }
 
 /* One hue per parser; add a line when a new parser is registered
    (falls back to the default above). */
-.parser-chip[data-parser="bcp"] { --parser-hue: 215; }
-.parser-chip[data-parser="interbank"] { --parser-hue: 130; --parser-shade: 8%; }
-.parser-chip[data-parser="falabella"] { --parser-hue: 150; --parser-shade: -24%; }
+.parser-chip[data-parser="bcp"] {
+  --parser-hue: 215;
+}
+.parser-chip[data-parser="interbank"] {
+  --parser-hue: 130;
+  --parser-shade: 8%;
+}
+.parser-chip[data-parser="falabella"] {
+  --parser-hue: 150;
+  --parser-shade: -24%;
+}
 
 .parser-chip::before {
-  content: '';
+  content: "";
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
@@ -337,4 +344,3 @@
   border-radius: var(--pico-border-radius);
   background: #fff;
 }
-

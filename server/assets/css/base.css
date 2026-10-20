@@ -40,7 +40,7 @@
   color: var(--pico-primary);
 }
 
-.app-sidebar a[aria-current='page'] {
+.app-sidebar a[aria-current="page"] {
   border-left-color: var(--pico-primary);
   color: var(--pico-primary);
   font-weight: 600;
@@ -128,4 +128,3 @@
 .webhook-token-error {
   color: var(--pico-del-color);
 }
-
