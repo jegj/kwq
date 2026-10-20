@@ -2,7 +2,6 @@ import { join } from 'node:path';
 import fastifyCookie from '@fastify/cookie';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyView from '@fastify/view';
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   FastifyAdapter,
@@ -13,8 +12,6 @@ import ejs from 'ejs';
 import { AppModule } from '../src/app.module.js';
 import { signAuthToken } from '../src/auth/util/jwt.util.js';
 import type { EnvironmentVariables } from '../src/config/env.validation.js';
-import { RedirectExceptionFilter } from '../src/auth/redirect/redirect.exception.js';
-import { NotFoundExceptionFilter } from '../src/common/not-found.filter.js';
 import { helmetOptions } from '../src/common/security-headers.js';
 
 export async function createTestApp(
@@ -30,11 +27,6 @@ export async function createTestApp(
   const app = moduleFixture.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter(),
   );
-  app.useGlobalFilters(
-    new RedirectExceptionFilter(),
-    new NotFoundExceptionFilter(),
-  );
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   await app.register(fastifyView, {
     engine: { ejs },
     root: join(import.meta.dirname, '../src/views'),

@@ -4,6 +4,5 @@ TODO: PWA
 TODO: PUSH NOTIFICATIONS
 TODO: HEALTH ENDPOINT - add @nestjs/terminus with GET /health that pings the DB (PrismaService), and point Caddy/systemd (infra/) at it
 TODO: WEBHOOK RATE LIMITING - POST /hooks/email hits the DB on every call and is not throttled; apply ThrottlerGuard keyed on the X-Kwq-Token header (not IP, calls come from Google IPs); also decide payload-size hardening (see CLAUDE.md open follow-ups)
-TODO: GLOBAL FILTERS AND PIPE AS PROVIDERS - main.ts does new RedirectExceptionFilter()/NotFoundExceptionFilter() and new ValidationPipe({ whitelist: true }); move them to APP_FILTER/APP_PIPE providers in AppModule so they can use DI and e2e tests (test/bootstrap.ts) match prod; add transform: true and forbidNonWhitelisted: true to the pipe and re-check the query DTOs still behave
 TODO: SESSION GUARD CACHE (optional) - SessionGuard runs a DB query per request to read role/email (intentional, so demotions apply immediately); if it ever matters add a short in-memory TTL cache keyed by user id
 

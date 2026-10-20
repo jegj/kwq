@@ -1,13 +1,15 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD, Reflector } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_PIPE, Reflector } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminModule } from './admin/admin.module.js';
 import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
+import { RedirectExceptionFilter } from './auth/redirect/redirect.exception.js';
 import { CategoriesModule } from './categories/categories.module.js';
+import { NotFoundExceptionFilter } from './common/not-found.filter.js';
 import { OriginGuard, resolveAllowedOrigin } from './common/origin.guard.js';
 import type { EnvironmentVariables } from './config/env.validation.js';
 import { validateEnv } from './config/env.validation.js';
@@ -45,6 +47,16 @@ const observeImports =
 @Module({
   controllers: [AppController],
   providers: [
+    { provide: APP_FILTER, useClass: RedirectExceptionFilter },
+    { provide: APP_FILTER, useClass: NotFoundExceptionFilter },
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    },
     {
       provide: APP_GUARD,
       inject: [Reflector, ConfigService],

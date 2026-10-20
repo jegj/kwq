@@ -4,7 +4,6 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
@@ -14,14 +13,12 @@ import {
 import ejs from 'ejs';
 import { Logger } from 'nestjs-pino';
 import { AppModule, ObserveInstrument } from './app.module.js';
-import { RedirectExceptionFilter } from './auth/redirect/redirect.exception.js';
 import { createAssetUrl } from './common/asset-url.util.js';
 import {
   createDateFormatters,
   formatMoney,
   titleCase,
 } from './common/format.util.js';
-import { NotFoundExceptionFilter } from './common/not-found.filter.js';
 import { helmetOptions } from './common/security-headers.js';
 import type { EnvironmentVariables } from './config/env.validation.js';
 
@@ -43,11 +40,6 @@ async function bootstrap() {
   const config = app.get(ConfigService<EnvironmentVariables, true>);
   app.useLogger(app.get(Logger));
   app.enableShutdownHooks();
-  app.useGlobalFilters(
-    new RedirectExceptionFilter(),
-    new NotFoundExceptionFilter(),
-  );
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   await app.register(fastifyView, {
     engine: { ejs },
