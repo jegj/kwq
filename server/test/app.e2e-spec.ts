@@ -40,4 +40,21 @@ describe('AppController (e2e)', () => {
       .send({})
       .expect(401);
   });
+
+  it('/health (GET) is public and reports ok', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/health')
+      .expect(200);
+
+    expect(response.body).toEqual({ status: 'ok' });
+  });
+
+  it('/health (GET) is rate limited per client', async () => {
+    const server = app.getHttpServer();
+    for (let hit = 0; hit < 60; hit++) {
+      await request(server).get('/health').expect(200);
+    }
+
+    await request(server).get('/health').expect(429);
+  });
 });

@@ -192,6 +192,12 @@
         timeout: 30
       tags: deploy
 
+    - name: Check kwq health (app up and DB reachable)
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000/health
+        status_code: 200
+      tags: deploy
+
   handlers:
     - name: Reload systemd
       ansible.builtin.systemd_service:
