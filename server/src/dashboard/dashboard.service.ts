@@ -27,6 +27,7 @@ const FALLBACK_COLORS = [
   '#9ece6a',
 ];
 
+const MANUAL_PARSER = 'Manual';
 const LIST_SIZE = 5;
 const MONTH_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])$/;
 
@@ -163,6 +164,7 @@ export class DashboardService {
       biggestRows,
       uncategorizedRows,
       merchantRows,
+      parserRows,
       dailyRows,
     ] = await Promise.all([
       this.repository.totalsByCurrency(userId, range),
@@ -172,6 +174,7 @@ export class DashboardService {
       this.repository.biggestTransactions(userId, range, LIST_SIZE),
       this.repository.uncategorizedCounts(userId, range),
       this.repository.topMerchants(userId, range, LIST_SIZE),
+      this.repository.totalsByParser(userId, range),
       this.repository.dailyTotals(userId, range, this.timeZone),
     ]);
 
@@ -205,6 +208,13 @@ export class DashboardService {
           biggest: inCurrency(biggestRows, currency).map(item),
           topMerchants: inCurrency(merchantRows, currency).map(
             ({ merchant, amount, count }) => ({ merchant, amount, count }),
+          ),
+          byParser: inCurrency(parserRows, currency).map(
+            ({ parser, amount, count }) => ({
+              parser: parser ?? MANUAL_PARSER,
+              amount,
+              count,
+            }),
           ),
           uncategorized: uncategorizedByCurrency.get(currency) ?? 0,
         };

@@ -58,6 +58,7 @@ interface Stubs {
   categories?: any[];
   uncategorized?: any[];
   merchants?: any[];
+  parsers?: any[];
   daily?: any[];
   recent?: any[];
   biggest?: any[];
@@ -75,6 +76,7 @@ function serviceWith({
   categories = [],
   uncategorized = [],
   merchants = [],
+  parsers = [],
   daily = [],
   recent = [],
   biggest = [],
@@ -87,6 +89,7 @@ function serviceWith({
     totalsByCategory: vi.fn(async () => categories),
     uncategorizedCounts: vi.fn(async () => uncategorized),
     topMerchants: vi.fn(async () => merchants),
+    totalsByParser: vi.fn(async () => parsers),
     dailyTotals: vi.fn(async () => daily),
     recentTransactions: vi.fn(async () => recent),
     biggestTransactions: vi.fn(async () => biggest),
@@ -296,6 +299,22 @@ describe('DashboardService.getSummaries lists', () => {
     expect(usd.topMerchants).toEqual([
       { merchant: 'Uber', amount: 25, count: 2 },
     ]);
+  });
+
+  it('attaches the spend per parser of each currency', async () => {
+    const [pen, usd] = await serviceWith({
+      parsers: [
+        { currency: 'PEN', parser: 'bcp', amount: 80, count: 3 },
+        { currency: 'PEN', parser: null, amount: 20, count: 1 },
+        { currency: 'USD', parser: 'bcp', amount: 25, count: 2 },
+      ],
+    }).getSummaries(userId, '2026-10');
+
+    expect(pen.byParser).toEqual([
+      { parser: 'bcp', amount: 80, count: 3 },
+      { parser: 'Manual', amount: 20, count: 1 },
+    ]);
+    expect(usd.byParser).toEqual([{ parser: 'bcp', amount: 25, count: 2 }]);
   });
 
   it('counts the transactions without a category per currency', async () => {

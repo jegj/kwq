@@ -27,6 +27,13 @@ export interface MerchantTotalRow {
   count: number;
 }
 
+export interface ParserTotalRow {
+  currency: string;
+  parser: string | null;
+  amount: number;
+  count: number;
+}
+
 export interface DailyTotalRow {
   currency: string;
   day: number;
@@ -135,6 +142,26 @@ export class DashboardRepository {
       ) ranked
       WHERE rank <= ${limit}
       ORDER BY currency, rank`;
+  }
+
+  // Manual transactions have no email, so their parser is NULL.
+  totalsByParser(
+    userId: string,
+    range: { gte: Date; lt: Date },
+  ): Promise<ParserTotalRow[]> {
+    return this.prisma.$queryRaw<ParserTotalRow[]>`
+      SELECT
+        t.currency,
+        e.parser_name AS parser,
+        round(sum(t.amount), 2)::float8 AS amount,
+        count(*)::int AS count
+      FROM transaction t
+      LEFT JOIN email_notification e ON e.transaction_id = t.id
+      WHERE t.user_id = ${userId}::uuid
+        AND t.transaction_date >= ${range.gte}
+        AND t.transaction_date < ${range.lt}
+      GROUP BY t.currency, e.parser_name
+      ORDER BY t.currency, amount DESC, parser`;
   }
 
   // transaction_date is timestamptz: AT TIME ZONE yields the local wall-clock day.
