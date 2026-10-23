@@ -4,7 +4,7 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": false,
-    "assets": ["views/**/*"],
+    "assets": ["views/**/*", "pwa/sw.js"],
     "watchAssets": true
   }
 }

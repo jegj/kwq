@@ -18,6 +18,7 @@ import { EmailsModule } from './emails/emails.module.js';
 import { HealthModule } from './health/health.module.js';
 import { HooksModule } from './hooks/hooks.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { PwaModule } from './pwa/pwa.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { TransactionsModule } from './transactions/transactions.module.js';
 
@@ -99,6 +100,7 @@ const observeImports =
     EmailsModule,
     HealthModule,
     HooksModule,
+    PwaModule,
     SettingsModule,
     TransactionsModule,
   ],
