@@ -3,6 +3,8 @@
 kwq_domain: qhawaq.space
 # ACME account contact for Let's Encrypt (optional)
 kwq_acme_email: jegj57@gmail.com
+# Contact push services can reach about this sender (mailto: or https:); not a secret
+kwq_vapid_subject: "mailto:jegj57@gmail.com"
 kwq_db_name: kwq
 # Must equal the OS user the service runs as (kwq): the app uses socket peer auth, no DB password
 kwq_db_user: kwq

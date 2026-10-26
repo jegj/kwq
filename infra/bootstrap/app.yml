@@ -67,6 +67,9 @@
           JWT_SECRET={{ kwq_jwt_secret }}
           OBSERVE_APP_KEY={{ kwq_observe_app_key }}
           OBSERVE_APP_SECRET={{ kwq_observe_app_secret }}
+          VAPID_PUBLIC_KEY={{ kwq_vapid_public_key }}
+          VAPID_PRIVATE_KEY={{ kwq_vapid_private_key }}
+          VAPID_SUBJECT={{ kwq_vapid_subject }}
         owner: root
         group: root
         mode: "0600"
