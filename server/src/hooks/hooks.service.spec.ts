@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { AlertEvent } from '../push/push.service.js';
 import type { GmailWebhookDto } from './dto/email-webhook.dto.js';
+import type { StoreResult } from './email-notification.repository.js';
 import { HooksService } from './hooks.service.js';
 import {
   type BankParser,
@@ -24,14 +26,27 @@ function makeParser(parse: BankParser['parse'] = () => parsed): BankParser {
   return { name: 'test-parser', canParse: () => true, parse };
 }
 
+const alertEvent: AlertEvent = {
+  type: 'transaction',
+  id: 'txn-1',
+  merchant: 'Store',
+  amount: '10.00',
+  currency: 'PEN',
+};
+
 function makeService(
   parser: BankParser | null,
-  result: 'created' | 'duplicate' = 'created',
+  result: StoreResult = { status: 'created', event: null },
 ) {
   const repository = { store: vi.fn().mockResolvedValue(result) };
   const registry = { find: vi.fn().mockReturnValue(parser) };
-  const service = new HooksService(repository as any, registry as any);
-  return { service, repository };
+  const push = { notify: vi.fn().mockResolvedValue(undefined) };
+  const service = new HooksService(
+    repository as any,
+    registry as any,
+    push as any,
+  );
+  return { service, repository, push };
 }
 
 describe('HooksService', () => {
@@ -79,10 +94,39 @@ describe('HooksService', () => {
   });
 
   it('resolves normally on duplicate delivery', async () => {
-    const { service } = makeService(makeParser(), 'duplicate');
+    const { service } = makeService(makeParser(), { status: 'duplicate' });
 
     await expect(
       service.receiveEmail('user-1', email),
     ).resolves.toBeUndefined();
+  });
+
+  it('pushes the stored event to the user after the commit', async () => {
+    const { service, push } = makeService(makeParser(), {
+      status: 'created',
+      event: alertEvent,
+    });
+
+    await service.receiveEmail('user-1', email);
+
+    expect(push.notify).toHaveBeenCalledWith('user-1', alertEvent);
+  });
+
+  it('pushes nothing when the stored email raises no alert', async () => {
+    const { service, push } = makeService(null);
+
+    await service.receiveEmail('user-1', email);
+
+    expect(push.notify).not.toHaveBeenCalled();
+  });
+
+  it('pushes nothing on duplicate delivery', async () => {
+    const { service, push } = makeService(makeParser(), {
+      status: 'duplicate',
+    });
+
+    await service.receiveEmail('user-1', email);
+
+    expect(push.notify).not.toHaveBeenCalled();
   });
 });

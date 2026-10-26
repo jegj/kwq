@@ -14,6 +14,14 @@
     </nav>
   </div>
 
+  <% if (vapidPublicKey) { %>
+  <div x-data="pushToggle('<%= vapidPublicKey %>')" x-show="supported && !subscribed" x-cloak>
+    <button type="button" class="outline" x-on:click="enable" x-bind:disabled="busy">Enable alerts</button>
+    <small x-show="denied" role="alert">Alerts are blocked for this site in your browser settings.</small>
+    <small x-show="error" role="alert" x-text="error"></small>
+  </div>
+  <% } %>
+
   <p x-show="!summaries.length" style="color: var(--pico-muted-color);">No transactions in <%= monthNav.label %>.</p>
 
   <div x-show="summaries.length > 1" role="group" style="margin-top: 1rem;">

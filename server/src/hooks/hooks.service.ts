@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PushService } from '../push/push.service.js';
 import type { GmailWebhookDto } from './dto/email-webhook.dto.js';
 import { EmailNotificationRepository } from './email-notification.repository.js';
 import {
@@ -15,6 +16,7 @@ export class HooksService {
   constructor(
     private readonly notifications: EmailNotificationRepository,
     private readonly parserRegistry: ParserRegistry,
+    private readonly push: PushService,
   ) {}
 
   async receiveEmail(userId: string, email: GmailWebhookDto): Promise<void> {
@@ -34,14 +36,17 @@ export class HooksService {
       : null;
     const result = await this.notifications.store(userId, email, outcome);
 
-    if (result === 'duplicate') {
+    if (result.status === 'duplicate') {
       // Same messageId re-delivered: already processed, no-op.
       this.logger.warn({
         msg: 'Duplicate webhook delivery for an already-processed email',
         messageId: email.messageId,
         userId,
       });
+      return;
     }
+
+    if (result.event) await this.push.notify(userId, result.event);
   }
 
   private parse(

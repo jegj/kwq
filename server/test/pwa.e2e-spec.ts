@@ -23,6 +23,15 @@ describe('PWA (e2e)', () => {
     expect(response.text).toContain('addEventListener');
   });
 
+  it('/sw.js (GET) handles push alerts and opens their page on click', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/sw.js')
+      .expect(200);
+
+    expect(response.text).toContain("addEventListener('push'");
+    expect(response.text).toContain("addEventListener('notificationclick'");
+  });
+
   it('/manifest.webmanifest (GET) is public and installable', async () => {
     const response = await request(app.getHttpServer())
       .get('/manifest.webmanifest')

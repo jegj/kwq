@@ -13,6 +13,8 @@ import {
 const APP_ENVS = ['development', 'staging', 'production'] as const;
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'];
 const MIN_SECRET_LENGTH = 32;
+const hasAnyVapid = (env: EnvironmentVariables) =>
+  Boolean(env.VAPID_PUBLIC_KEY || env.VAPID_PRIVATE_KEY || env.VAPID_SUBJECT);
 const DEV_JWT_SECRET = 'dev-only-secret-change-me';
 
 export class EnvironmentVariables {
@@ -42,6 +44,20 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsIn(LOG_LEVELS)
   LOG_LEVEL?: string;
+
+  // Web Push is off unless all three are set (see docs/adr/0001-web-push-over-sse.md).
+  @ValidateIf(hasAnyVapid)
+  @IsString()
+  VAPID_PUBLIC_KEY?: string;
+
+  @ValidateIf(hasAnyVapid)
+  @IsString()
+  VAPID_PRIVATE_KEY?: string;
+
+  // mailto: or https: URL identifying the sender to push services.
+  @ValidateIf(hasAnyVapid)
+  @IsString()
+  VAPID_SUBJECT?: string;
 
   @IsOptional()
   @IsString()

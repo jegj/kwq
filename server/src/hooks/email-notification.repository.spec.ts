@@ -40,7 +40,14 @@ function makePrismaStub(notification: { id: string } | 'duplicate') {
           : vi.fn().mockResolvedValue(notification),
       update: vi.fn().mockResolvedValue({}),
     },
-    transaction: { create: vi.fn().mockResolvedValue({ id: 'txn-1' }) },
+    transaction: {
+      create: vi.fn().mockResolvedValue({
+        id: 'txn-1',
+        merchant: 'Store',
+        amount: '10.00',
+        currency: 'PEN',
+      }),
+    },
   };
   return {
     $transaction: vi.fn((callback: (tx: unknown) => unknown) => callback(tx)),
@@ -59,7 +66,16 @@ describe('EmailNotificationRepository', () => {
       parsed,
     });
 
-    expect(result).toBe('created');
+    expect(result).toEqual({
+      status: 'created',
+      event: {
+        type: 'transaction',
+        id: 'txn-1',
+        merchant: 'Store',
+        amount: '10.00',
+        currency: 'PEN',
+      },
+    });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.emailNotification.create).not.toHaveBeenCalled();
     expect(prisma._tx.emailNotification.create).toHaveBeenCalledWith(
@@ -92,7 +108,7 @@ describe('EmailNotificationRepository', () => {
       parsed,
     });
 
-    expect(result).toBe('duplicate');
+    expect(result).toEqual({ status: 'duplicate' });
     expect(prisma._tx.transaction.create).not.toHaveBeenCalled();
     expect(prisma._tx.emailNotification.update).not.toHaveBeenCalled();
   });
@@ -113,7 +129,7 @@ describe('EmailNotificationRepository', () => {
 
     const result = await repository.store('user-1', email, null);
 
-    expect(result).toBe('created');
+    expect(result).toEqual({ status: 'created', event: null });
     expect(prisma._tx.emailNotification.create).toHaveBeenCalled();
     expect(prisma._tx.transaction.create).not.toHaveBeenCalled();
     expect(prisma._tx.emailNotification.update).not.toHaveBeenCalled();
@@ -123,11 +139,15 @@ describe('EmailNotificationRepository', () => {
     const prisma = makePrismaStub({ id: 'notif-1' });
     const repository = new EmailNotificationRepository(prisma as any);
 
-    await repository.store('user-1', email, {
+    const result = await repository.store('user-1', email, {
       parserName: 'broken-parser',
       parsed: null,
     });
 
+    expect(result).toEqual({
+      status: 'created',
+      event: { type: 'failed-email', id: 'notif-1' },
+    });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma._tx.transaction.create).not.toHaveBeenCalled();
     expect(prisma._tx.emailNotification.update).toHaveBeenCalledWith({

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { AlertEvent } from '../push/push.service.js';
 import type { GmailWebhookDto } from './dto/email-webhook.dto.js';
 import type { ParsedTransaction } from './parser/parser.interface.js';
 
@@ -11,6 +12,11 @@ export interface ParseOutcome {
   parserName: string;
   parsed: ParsedTransaction | null;
 }
+
+// `event` is what the user should be alerted about, if anything.
+export type StoreResult =
+  | { status: 'duplicate' }
+  | { status: 'created'; event: AlertEvent | null };
 
 @Injectable()
 export class EmailNotificationRepository {
@@ -25,7 +31,7 @@ export class EmailNotificationRepository {
     userId: string,
     email: GmailWebhookDto,
     outcome: ParseOutcome | null,
-  ): Promise<'created' | 'duplicate'> {
+  ): Promise<StoreResult> {
     return this.prisma.$transaction(async (tx) => {
       let notification: { id: string };
       try {
@@ -46,11 +52,11 @@ export class EmailNotificationRepository {
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === PRISMA_UNIQUE_CONSTRAINT_VIOLATION
         ) {
-          return 'duplicate';
+          return { status: 'duplicate' };
         }
         throw error;
       }
-      if (!outcome) return 'created';
+      if (!outcome) return { status: 'created', event: null };
 
       const { parserName, parsed } = outcome;
       if (!parsed) {
@@ -59,7 +65,10 @@ export class EmailNotificationRepository {
           data: { parseStatus: 'FAILED', parserName },
           select: { id: true },
         });
-        return 'created';
+        return {
+          status: 'created',
+          event: { type: 'failed-email', id: notification.id },
+        };
       }
 
       const transaction = await tx.transaction.create({
@@ -84,7 +93,16 @@ export class EmailNotificationRepository {
         },
         select: { id: true },
       });
-      return 'created';
+      return {
+        status: 'created',
+        event: {
+          type: 'transaction',
+          id: transaction.id,
+          merchant: transaction.merchant,
+          amount: transaction.amount.toString(),
+          currency: transaction.currency,
+        },
+      };
     });
   }
 }

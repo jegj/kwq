@@ -77,4 +77,27 @@ describe('validateEnv', () => {
       expect(validateEnv(env).JWT_SECRET).toBe('short');
     });
   });
+
+  describe('VAPID keys', () => {
+    const vapid = {
+      VAPID_PUBLIC_KEY: 'public',
+      VAPID_PRIVATE_KEY: 'private',
+      VAPID_SUBJECT: 'mailto:admin@kwq.local',
+    };
+
+    it('are optional as a group, so push can stay off', () => {
+      expect(validateEnv(baseEnv).VAPID_PUBLIC_KEY).toBeUndefined();
+    });
+
+    it('accepts the full set', () => {
+      expect(validateEnv({ ...baseEnv, ...vapid })).toMatchObject(vapid);
+    });
+
+    it.each(Object.keys(vapid))('rejects a set missing %s', (omitted) => {
+      const { [omitted]: _omitted, ...partial } = vapid;
+      expect(() => validateEnv({ ...baseEnv, ...partial })).toThrow(
+        new RegExp(omitted),
+      );
+    });
+  });
 });
