@@ -5,6 +5,13 @@ import { Controller, Get, Header } from '@nestjs/common';
 // Copied next to this file by nest-cli `assets`, so it resolves in src/ and dist/.
 const serviceWorker = readFileSync(join(import.meta.dirname, 'sw.js'), 'utf8');
 
+// Self-contained (inline styles, no assets) so it renders from the SW cache
+// with nothing else available; views/ is copied to dist/ by nest-cli.
+const offlinePage = readFileSync(
+  join(import.meta.dirname, '../views/offline.html'),
+  'utf8',
+);
+
 const BACKGROUND = '#13171f';
 
 const manifest = JSON.stringify({
@@ -38,6 +45,14 @@ export class PwaController {
   @Header('Cache-Control', 'no-cache')
   worker() {
     return serviceWorker;
+  }
+
+  // no-cache: the SW refreshes its copy on install, not via HTTP freshness.
+  @Get('offline')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @Header('Cache-Control', 'no-cache')
+  offline() {
+    return offlinePage;
   }
 
   @Get('manifest.webmanifest')

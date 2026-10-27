@@ -32,6 +32,37 @@ describe('PWA (e2e)', () => {
     expect(response.text).toContain("addEventListener('notificationclick'");
   });
 
+  it('/sw.js (GET) precaches /offline and serves it when a navigation fails', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/sw.js')
+      .expect(200);
+
+    expect(response.text).toContain("'/offline'");
+    expect(response.text).toContain("addEventListener('fetch'");
+    expect(response.text).toContain("request.mode === 'navigate'");
+  });
+
+  it('/sw.js (GET) only caches /assets/, never app pages', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/sw.js')
+      .expect(200);
+
+    expect(response.text).toContain("startsWith('/assets/')");
+  });
+
+  it('/offline (GET) is public, self-contained and revalidated', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/offline')
+      .expect(200);
+
+    expect(response.headers['content-type']).toMatch(/^text\/html/);
+    expect(response.headers['cache-control']).toBe('no-cache');
+    expect(response.text).toContain('offline');
+    // Must render with nothing else cached.
+    expect(response.text).not.toMatch(/<link[^>]+stylesheet/);
+    expect(response.text).not.toMatch(/<script[^>]+src=/);
+  });
+
   it('/manifest.webmanifest (GET) is public and installable', async () => {
     const response = await request(app.getHttpServer())
       .get('/manifest.webmanifest')
