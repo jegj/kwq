@@ -8,8 +8,8 @@ const serviceWorker = readFileSync(join(import.meta.dirname, 'sw.js'), 'utf8');
 const BACKGROUND = '#13171f';
 
 const manifest = JSON.stringify({
-  name: 'kwq',
-  short_name: 'kwq',
+  name: 'qhawaq',
+  short_name: 'qhawaq',
   start_url: '/app/dashboard',
   scope: '/',
   display: 'standalone',

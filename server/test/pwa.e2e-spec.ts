@@ -42,7 +42,7 @@ describe('PWA (e2e)', () => {
     );
     const manifest = JSON.parse(response.text);
     expect(manifest).toMatchObject({
-      name: 'kwq',
+      name: 'qhawaq',
       start_url: '/app/dashboard',
       scope: '/',
       display: 'standalone',
