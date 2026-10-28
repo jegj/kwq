@@ -17,9 +17,11 @@ import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { GuestGuard } from './guard/guest.guard.js';
 import { signAuthToken, verifyAuthToken } from './util/jwt.util.js';
+import {
+  SESSION_COOKIE,
+  sessionCookieOptions,
+} from './util/session-cookie.util.js';
 
-const SESSION_COOKIE = 'session';
-const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // matches the JWT's 7d expiry
 const LOGIN_ATTEMPTS_PER_MINUTE = 5;
 
 @Controller('auth')
@@ -59,13 +61,11 @@ export class AuthController {
     await this.authService.recordLogin(user.id);
 
     const token = signAuthToken(user, this.config.get('JWT_SECRET'));
-    reply.setCookie(SESSION_COOKIE, token, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: this.config.get('APP_ENV') !== 'development',
-      maxAge: SESSION_MAX_AGE_SECONDS,
-    });
+    reply.setCookie(
+      SESSION_COOKIE,
+      token,
+      sessionCookieOptions(this.config.get('APP_ENV') !== 'development'),
+    );
     reply.status(HttpStatus.FOUND).redirect('/app/dashboard');
   }
 

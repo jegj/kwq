@@ -4,11 +4,19 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { EnvironmentVariables } from '../../config/env.validation.js';
 import { AuthService } from '../auth.service.js';
 import { RedirectException } from '../redirect/redirect.exception.js';
-import { verifyAuthToken } from '../util/jwt.util.js';
+import {
+  shouldRefreshAuthToken,
+  signAuthToken,
+  verifyAuthToken,
+} from '../util/jwt.util.js';
+import {
+  SESSION_COOKIE,
+  sessionCookieOptions,
+} from '../util/session-cookie.util.js';
 
 @Injectable()
 export class SessionGuard implements CanActivate {
@@ -18,12 +26,13 @@ export class SessionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const http = context.switchToHttp();
+    const request = http.getRequest<FastifyRequest>();
     const token = request.cookies?.session;
     const payload = token
       ? verifyAuthToken(token, this.config.get('JWT_SECRET'))
       : null;
-    if (!payload) {
+    if (!token || !payload) {
       throw new RedirectException('/auth/login');
     }
     // The token only proves who signed in; role/email come from the DB so
@@ -33,6 +42,15 @@ export class SessionGuard implements CanActivate {
       throw new RedirectException('/auth/login');
     }
     request.user = user;
+    if (shouldRefreshAuthToken(token)) {
+      http
+        .getResponse<FastifyReply>()
+        .setCookie(
+          SESSION_COOKIE,
+          signAuthToken(user, this.config.get('JWT_SECRET')),
+          sessionCookieOptions(this.config.get('APP_ENV') !== 'development'),
+        );
+    }
     return true;
   }
 }

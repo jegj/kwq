@@ -107,7 +107,7 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
 ## Auth implementation
 
 - Session cookie named `session`, httpOnly, `SameSite=Lax`, holding a JWT
-  signed with `JWT_SECRET`. Payload is `{ id, role, email }`, 7-day expiry.
+  signed with `JWT_SECRET`. Payload is `{ id, role, email }`, 15-day sliding expiry.
   Signing/verifying lives in `server/src/auth/util/jwt.util.ts`.
 - `SessionGuard` (protects `/app/*`) and `GuestGuard` (protects `/auth/login`
   from already-logged-in visitors) don't return `false` — they throw

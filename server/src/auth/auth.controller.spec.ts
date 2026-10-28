@@ -61,10 +61,10 @@ describe('AuthController', () => {
         return (reply.setCookie as any).mock.calls[0][2];
       }
 
-      it('is Secure outside development and lasts 7 days', async () => {
+      it('is Secure outside development and lasts 15 days', async () => {
         expect(await loginCookieOptions('production')).toMatchObject({
           secure: true,
-          maxAge: 7 * 24 * 60 * 60,
+          maxAge: 15 * 24 * 60 * 60,
         });
       });
 

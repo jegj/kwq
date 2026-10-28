@@ -1,12 +1,19 @@
 import type { ExecutionContext } from '@nestjs/common';
+import jwt from 'jsonwebtoken';
 import { describe, expect, it, vi } from 'vitest';
 import { RedirectException } from '../redirect/redirect.exception.js';
 import { signAuthToken } from '../util/jwt.util.js';
 import { SessionGuard } from './session.guard.js';
 
-function makeContext(request: Record<string, unknown>) {
+function makeContext(
+  request: Record<string, unknown>,
+  reply: Record<string, unknown> = { setCookie: vi.fn() },
+) {
   return {
-    switchToHttp: () => ({ getRequest: () => request }),
+    switchToHttp: () => ({
+      getRequest: () => request,
+      getResponse: () => reply,
+    }),
   } as ExecutionContext;
 }
 
@@ -58,6 +65,52 @@ describe('SessionGuard', () => {
       id: 'user-1',
       role: 'USER',
       email: 'javier@example.com',
+    });
+  });
+
+  describe('sliding session', () => {
+    const dbUser = { id: 'user-1', role: 'USER', email: 'javier@example.com' };
+    const DAY_SECONDS = 24 * 60 * 60;
+
+    it('re-issues the cookie when the token is past half of its life', async () => {
+      const authService = {
+        findSessionUser: vi.fn().mockResolvedValue(dbUser),
+      };
+      const guard = new SessionGuard(authService as any, config);
+      const tenDaysAgo = Math.floor(Date.now() / 1000) - 10 * DAY_SECONDS;
+      const stale = jwt.sign({ ...tokenPayload, iat: tenDaysAgo }, SECRET, {
+        algorithm: 'HS256',
+        expiresIn: '15d',
+      });
+      const reply = { setCookie: vi.fn() };
+
+      await guard.canActivate(
+        makeContext({ cookies: { session: stale } }, reply),
+      );
+
+      expect(reply.setCookie).toHaveBeenCalledTimes(1);
+      const [name, value, options] = reply.setCookie.mock.calls[0];
+      expect(name).toBe('session');
+      expect(value).not.toBe(stale);
+      expect(options).toMatchObject({
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 15 * DAY_SECONDS,
+      });
+    });
+
+    it('leaves a fresh token alone', async () => {
+      const authService = {
+        findSessionUser: vi.fn().mockResolvedValue(dbUser),
+      };
+      const guard = new SessionGuard(authService as any, config);
+      const reply = { setCookie: vi.fn() };
+      const cookies = { session: signAuthToken(tokenPayload, SECRET) };
+
+      await guard.canActivate(makeContext({ cookies }, reply));
+
+      expect(reply.setCookie).not.toHaveBeenCalled();
     });
   });
 });
