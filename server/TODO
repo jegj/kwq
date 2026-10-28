@@ -1,4 +1,3 @@
-TODO: CHECK WHY SERVICE IS BEING RESTARTED
 TODO: SESSION GUARD CACHE (optional) - SessionGuard runs a DB query per request to read role/email (intentional, so demotions apply immediately); if it ever matters add a short in-memory TTL cache keyed by user id
 TODO: Database backup strategy
-
+TODO: MANUAL TRANSACTIONS WITH PARSER(BANK) 
