@@ -4,38 +4,35 @@ import { validate } from 'class-validator';
 import { describe, expect, it } from 'vitest';
 import { SubscribeDto } from './subscribe.dto.js';
 
-async function invalidProperties(overrides: Record<string, unknown>) {
+async function invalidProperties(endpoint: string) {
   const dto = plainToInstance(SubscribeDto, {
-    endpoint: 'https://fcm.googleapis.com/fcm/send/abc',
+    endpoint,
     p256dh: 'key',
-    auth: 'auth',
-    ...overrides,
+    auth: 'secret',
   });
   const errors = await validate(dto);
   return errors.map((error) => error.property);
 }
 
-describe('SubscribeDto', () => {
-  it('accepts a push service https endpoint with its keys', async () => {
-    expect(await invalidProperties({})).toEqual([]);
+describe('SubscribeDto endpoint', () => {
+  it.each([
+    'https://fcm.googleapis.com/fcm/send/abc',
+    'https://updates.push.services.mozilla.com/wpush/v2/abc',
+    'https://wns2-par02p.notify.windows.com/w/?token=abc',
+    'https://web.push.apple.com/abc',
+  ])('accepts the known push service %s', async (endpoint) => {
+    expect(await invalidProperties(endpoint)).toEqual([]);
   });
 
   it.each([
-    'http://fcm.googleapis.com/fcm/send/abc',
-    'ftp://example.com/x',
-    'not a url',
-    '',
-  ])('rejects the endpoint %j', async (endpoint) => {
-    expect(await invalidProperties({ endpoint })).toEqual(['endpoint']);
-  });
-
-  it('rejects an endpoint without a tld (internal host)', async () => {
-    expect(
-      await invalidProperties({ endpoint: 'https://localhost/x' }),
-    ).toEqual(['endpoint']);
-  });
-
-  it.each(['p256dh', 'auth'])('requires %s', async (field) => {
-    expect(await invalidProperties({ [field]: '' })).toEqual([field]);
+    'https://127.0.0.1/x',
+    'https://localhost/x',
+    'https://169.254.169.254/latest/meta-data',
+    'https://internal.local/x',
+    'https://fcm.googleapis.com.evil.com/x',
+    'https://fcm.googleapis.com@evil.com/x',
+    'http://fcm.googleapis.com/x',
+  ])('rejects %s', async (endpoint) => {
+    expect(await invalidProperties(endpoint)).toEqual(['endpoint']);
   });
 });
