@@ -310,6 +310,7 @@ describe('TransactionsService', () => {
 
       expect(repository.update).toHaveBeenCalledWith(
         UUID(1),
+        'user-1',
         expect.objectContaining({
           categoryId: UUID(9),
           isManuallyCategorized: true,
@@ -326,7 +327,7 @@ describe('TransactionsService', () => {
         categoryId: UUID(9),
       });
 
-      const [, data] = repository.update.mock.calls[0];
+      const [, , data] = repository.update.mock.calls[0];
       expect(data.isManuallyCategorized).toBeUndefined();
       expect(categoriesRepository.isAccessible).not.toHaveBeenCalled();
     });
@@ -343,6 +344,7 @@ describe('TransactionsService', () => {
       expect(categoriesRepository.isAccessible).not.toHaveBeenCalled();
       expect(repository.update).toHaveBeenCalledWith(
         UUID(1),
+        'user-1',
         expect.objectContaining({
           categoryId: null,
           isManuallyCategorized: true,

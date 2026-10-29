@@ -143,13 +143,13 @@ describe('TransactionsRepository', () => {
     });
   });
 
-  it('update targets the transaction by id', async () => {
+  it('update targets only the user’s transaction', async () => {
     const { prisma, repository } = repositoryWith();
 
-    await repository.update(UUID(1), { merchant: 'Shop' });
+    await repository.update(UUID(1), 'user-1', { merchant: 'Shop' });
 
     expect(prisma.transaction.update).toHaveBeenCalledWith({
-      where: { id: UUID(1) },
+      where: { id: UUID(1), userId: 'user-1' },
       data: { merchant: 'Shop' },
     });
   });

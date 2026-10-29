@@ -93,9 +93,10 @@ export class TransactionsRepository {
 
   async update(
     id: string,
+    userId: string,
     data: Prisma.TransactionUncheckedUpdateInput,
   ): Promise<void> {
-    await this.prisma.transaction.update({ where: { id }, data });
+    await this.prisma.transaction.update({ where: { id, userId }, data });
   }
 
   async delete(id: string, userId: string): Promise<boolean> {

@@ -129,7 +129,7 @@ export class TransactionsService {
     if (categoryChanged) {
       await this.assertCategoryAccessible(categoryId, userId);
     }
-    await this.repository.update(id, {
+    await this.repository.update(id, userId, {
       ...this.toData(body),
       isManuallyCategorized: categoryChanged ? true : undefined,
     });
