@@ -112,6 +112,18 @@ describe('HooksService', () => {
     expect(push.notify).toHaveBeenCalledWith('user-1', alertEvent);
   });
 
+  it('does not wait for the push to finish before returning', async () => {
+    const { service, push } = makeService(makeParser(), {
+      status: 'created',
+      event: alertEvent,
+    });
+    push.notify.mockReturnValue(new Promise(() => {})); // never settles
+
+    await expect(
+      service.receiveEmail('user-1', email),
+    ).resolves.toBeUndefined();
+  });
+
   it('pushes nothing when the stored email raises no alert', async () => {
     const { service, push } = makeService(null);
 

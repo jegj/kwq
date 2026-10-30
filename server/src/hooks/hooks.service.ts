@@ -46,7 +46,9 @@ export class HooksService {
       return;
     }
 
-    if (result.event) await this.push.notify(userId, result.event);
+    // Not awaited: slow push services shouldn't delay the gscript's response
+    // (notify never throws, so nothing is lost).
+    if (result.event) void this.push.notify(userId, result.event);
   }
 
   private parse(
