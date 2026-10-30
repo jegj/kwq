@@ -119,11 +119,12 @@ model PushSubscription {
   id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   userId    String   @db.Uuid @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint  String   @unique
+  endpoint  String
   p256dh    String
   auth      String
   createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
 
+  @@unique([userId, endpoint])
   @@index([userId])
   @@map("push_subscription")
 }

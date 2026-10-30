@@ -19,15 +19,17 @@ function makeRepository() {
 }
 
 describe('PushSubscriptionRepository', () => {
-  it('upserts by endpoint and moves it to the current user', async () => {
+  it('upserts per user and endpoint without touching other users’ rows', async () => {
     const { prisma, repository } = makeRepository();
 
     await repository.save('user-1', subscription);
 
     expect(prisma.pushSubscription.upsert).toHaveBeenCalledWith({
-      where: { endpoint: 'https://push/1' },
+      where: {
+        userId_endpoint: { userId: 'user-1', endpoint: 'https://push/1' },
+      },
       create: { userId: 'user-1', ...subscription },
-      update: { userId: 'user-1', p256dh: 'key', auth: 'auth' },
+      update: { p256dh: 'key', auth: 'auth' },
       select: { id: true },
     });
   });

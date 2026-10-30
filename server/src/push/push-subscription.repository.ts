@@ -11,14 +11,14 @@ export class PushSubscriptionRepository extends PushSubscriptionStore {
     super();
   }
 
-  // Keyed by endpoint: the same browser logging in as another user moves the
-  // subscription instead of duplicating it.
+  // Keyed per user: another user can't take over (or break) a subscription by
+  // sending its endpoint. One browser used by two accounts gets both users' alerts.
   async save(userId: string, subscription: StoredSubscription): Promise<void> {
     const { endpoint, p256dh, auth } = subscription;
     await this.prisma.pushSubscription.upsert({
-      where: { endpoint },
+      where: { userId_endpoint: { userId, endpoint } },
       create: { userId, endpoint, p256dh, auth },
-      update: { userId, p256dh, auth },
+      update: { p256dh, auth },
       select: { id: true },
     });
   }
