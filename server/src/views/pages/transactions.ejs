@@ -19,23 +19,23 @@
       </select>
     </label>
     <label>
-      Parser
-      <select name="parser" x-on:change="$el.form.requestSubmit()">
+      Bank
+      <select name="bank" x-on:change="$el.form.requestSubmit()">
         <option value="">All</option>
-        <option value="manual"<%= parser === 'manual' ? ' selected' : '' %>>Manual</option>
-        <% parsers.forEach((name) => { %>
-        <option value="<%= name %>"<%= parser === name ? ' selected' : '' %>><%= name %></option>
+        <option value="none"<%= bank === 'none' ? ' selected' : '' %>>Cash / other</option>
+        <% banks.forEach((name) => { %>
+        <option value="<%= name %>"<%= bank === name ? ' selected' : '' %>><%= name %></option>
         <% }) %>
       </select>
     </label>
     <noscript><button type="submit">Filter</button></noscript>
-    <% if (month || category || parser) { %>
+    <% if (month || category || bank) { %>
     <a href="/app/transactions" role="button" class="outline secondary">Clear</a>
     <% } %>
   </form>
 
   <% if (transactions.length === 0) { %>
-  <p class="categories-empty">No transactions<%= (month || category || parser) ? ' match these filters' : ' yet' %>. Add one, or wait for the next bank email.</p>
+  <p class="categories-empty">No transactions<%= (month || category || bank) ? ' match these filters' : ' yet' %>. Add one, or wait for the next bank email.</p>
   <% } else { %>
   <div class="overflow-auto">
   <table class="list-table">
@@ -45,7 +45,7 @@
         <th>Merchant</th>
         <th>Category</th>
         <th class="amount">Amount</th>
-        <th>Parser</th>
+        <th>Bank</th>
         <th>Source</th>
       </tr>
     </thead>
@@ -63,7 +63,7 @@
           <% } else { %><span class="categories-badge">Uncategorized</span><% } %>
         </td>
         <td data-label="Amount" class="amount amount-negative">-<%= fmt.formatMoney(Math.abs(Number(item.amount)), item.currency) %></td>
-        <td data-label="Parser"><% if (item.email?.parserName) { %><span class="parser-chip" data-parser="<%= item.email.parserName %>"><%= item.email.parserName %></span><% } else { %>—<% } %></td>
+        <td data-label="Bank"><% if (item.bankName) { %><span class="parser-chip" data-parser="<%= item.bankName %>"><%= item.bankName %></span><% } else { %>Cash / other<% } %></td>
         <td class="emails-row-actions"><% if (item.email) { %><a href="/app/emails/<%= item.email.id %>" x-on:click.stop>Email</a><% } %></td>
       </tr>
       <% }) %>
@@ -72,7 +72,7 @@
   </div>
 
   <%
-    const filterQuery = Object.entries({ month, category, parser })
+    const filterQuery = Object.entries({ month, category, bank })
       .filter(([, value]) => value)
       .map(([key, value]) => `&${key}=${encodeURIComponent(value)}`)
       .join('');

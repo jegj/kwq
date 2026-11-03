@@ -51,6 +51,11 @@ export class TransactionDto {
   operationType?: OperationType | null;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  bankName?: string | null;
+
+  @IsOptional()
   @IsUUID()
   categoryId?: string | null;
 }

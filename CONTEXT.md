@@ -12,6 +12,10 @@ _Avoid_: Notification, alert, message
 A single money movement (amount, currency, merchant, date) belonging to one user, created from a parsed email notification or entered manually.
 _Avoid_: Payment, expense, movement
 
+**Source bank**:
+The bank a transaction belongs to. Set automatically for transactions from a parsed email notification, chosen by the user for manual ones. Optional on manual transactions (e.g. cash).
+_Avoid_: Parser (that's how an email is read, not where the money moved)
+
 **Failed email**:
 An email notification whose matched parser threw while parsing, so it has no transaction. Emails no parser matched are unparsed, not failed.
 _Avoid_: Failed transaction

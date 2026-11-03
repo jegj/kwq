@@ -36,7 +36,7 @@ function serviceWith(rows: unknown[] = [], categories: { id: string }[] = []) {
   const repository = {
     findPage: vi.fn().mockResolvedValue(rows),
     findById: vi.fn().mockResolvedValue(null),
-    findCategoryId: vi.fn().mockResolvedValue(null),
+    findForUpdate: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockResolvedValue({ id: UUID(1) }),
     update: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(true),
@@ -182,32 +182,32 @@ describe('TransactionsService', () => {
       expect(result.category).toBeNull();
     });
 
-    it('filters by a registered parser', async () => {
+    it('filters by a registered bank', async () => {
       const { repository, service } = serviceWith();
 
-      const result = await service.list('user-1', { parser: 'bcp' });
+      const result = await service.list('user-1', { bank: 'bcp' });
 
-      expect(filtersOf(repository).source).toEqual({ parserName: 'bcp' });
-      expect(result.parser).toBe('bcp');
-      expect(result.parsers).toEqual(['bcp', 'interbank']);
+      expect(filtersOf(repository).bankName).toBe('bcp');
+      expect(result.bank).toBe('bcp');
+      expect(result.banks).toEqual(['bcp', 'interbank']);
     });
 
-    it('filters manual transactions with parser=manual', async () => {
+    it('filters transactions without a bank with bank=none', async () => {
       const { repository, service } = serviceWith();
 
-      const result = await service.list('user-1', { parser: 'manual' });
+      const result = await service.list('user-1', { bank: 'none' });
 
-      expect(filtersOf(repository).source).toBeNull();
-      expect(result.parser).toBe('manual');
+      expect(filtersOf(repository).bankName).toBeNull();
+      expect(result.bank).toBe('none');
     });
 
-    it('ignores an unknown parser', async () => {
+    it('ignores an unknown bank', async () => {
       const { repository, service } = serviceWith();
 
-      const result = await service.list('user-1', { parser: 'nope' });
+      const result = await service.list('user-1', { bank: 'nope' });
 
-      expect(filtersOf(repository).source).toBeUndefined();
-      expect(result.parser).toBeNull();
+      expect(filtersOf(repository).bankName).toBeUndefined();
+      expect(result.bank).toBeNull();
     });
   });
 
@@ -265,6 +265,35 @@ describe('TransactionsService', () => {
       );
     });
 
+    it('stores the chosen bank', async () => {
+      const { repository, service } = serviceWith();
+
+      await service.create('user-1', { ...validBody, bankName: 'bcp' });
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ bankName: 'bcp' }),
+      );
+    });
+
+    it('stores no bank when none is given', async () => {
+      const { repository, service } = serviceWith();
+
+      await service.create('user-1', validBody);
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ bankName: null }),
+      );
+    });
+
+    it('rejects a bank without a registered parser', async () => {
+      const { repository, service } = serviceWith();
+
+      await expect(
+        service.create('user-1', { ...validBody, bankName: 'nope' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
     it('rejects a category that is neither shared nor the user’s', async () => {
       const { repository, categoriesRepository, service } = serviceWith();
       categoriesRepository.isAccessible.mockResolvedValue(false);
@@ -299,9 +328,57 @@ describe('TransactionsService', () => {
       expect(repository.update).not.toHaveBeenCalled();
     });
 
+    it('updates the bank of a manual transaction', async () => {
+      const { repository, service } = serviceWith();
+      repository.findForUpdate.mockResolvedValue({
+        categoryId: null,
+        email: null,
+      });
+
+      await service.update('user-1', UUID(1), {
+        ...validBody,
+        bankName: 'interbank',
+      });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        UUID(1),
+        'user-1',
+        expect.objectContaining({ bankName: 'interbank' }),
+      );
+    });
+
+    it('keeps the parser’s bank on a parsed transaction', async () => {
+      const { repository, service } = serviceWith();
+      repository.findForUpdate.mockResolvedValue({
+        categoryId: null,
+        email: { id: UUID(5) },
+      });
+
+      await service.update('user-1', UUID(1), {
+        ...validBody,
+        bankName: 'interbank',
+      });
+
+      const [, , data] = repository.update.mock.calls[0];
+      expect(data).not.toHaveProperty('bankName');
+    });
+
+    it('rejects a bank without a registered parser on update', async () => {
+      const { repository, service } = serviceWith();
+      repository.findForUpdate.mockResolvedValue({
+        categoryId: null,
+        email: null,
+      });
+
+      await expect(
+        service.update('user-1', UUID(1), { ...validBody, bankName: 'nope' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
     it('flags manual categorization when the category changed', async () => {
       const { repository, service } = serviceWith();
-      repository.findCategoryId.mockResolvedValue({ categoryId: null });
+      repository.findForUpdate.mockResolvedValue({ categoryId: null });
 
       await service.update('user-1', UUID(1), {
         ...validBody,
@@ -320,7 +397,7 @@ describe('TransactionsService', () => {
 
     it('leaves the flag untouched when the category did not change', async () => {
       const { repository, categoriesRepository, service } = serviceWith();
-      repository.findCategoryId.mockResolvedValue({ categoryId: UUID(9) });
+      repository.findForUpdate.mockResolvedValue({ categoryId: UUID(9) });
 
       await service.update('user-1', UUID(1), {
         ...validBody,
@@ -334,7 +411,7 @@ describe('TransactionsService', () => {
 
     it('allows clearing the category without a lookup', async () => {
       const { repository, categoriesRepository, service } = serviceWith();
-      repository.findCategoryId.mockResolvedValue({ categoryId: UUID(9) });
+      repository.findForUpdate.mockResolvedValue({ categoryId: UUID(9) });
 
       await service.update('user-1', UUID(1), {
         ...validBody,
@@ -354,7 +431,7 @@ describe('TransactionsService', () => {
 
     it('rejects switching to an inaccessible category', async () => {
       const { repository, categoriesRepository, service } = serviceWith();
-      repository.findCategoryId.mockResolvedValue({ categoryId: null });
+      repository.findForUpdate.mockResolvedValue({ categoryId: null });
       categoriesRepository.isAccessible.mockResolvedValue(false);
 
       await expect(

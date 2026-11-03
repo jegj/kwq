@@ -79,9 +79,9 @@
     <article>
       <h2>By bank</h2>
       <ul class="dash-list">
-        <template x-for="entry in (summary ? summary.byParser : [])" :key="entry.parser">
+        <template x-for="entry in (summary ? summary.byBank : [])" :key="entry.bank">
           <li>
-            <span class="dash-merchant"><span x-text="entry.parser"></span> <small style="color: var(--pico-muted-color);" x-text="'· ' + entry.count + (entry.count === 1 ? ' purchase' : ' purchases')"></small></span>
+            <span class="dash-merchant"><span x-text="entry.bank"></span> <small style="color: var(--pico-muted-color);" x-text="'· ' + entry.count + (entry.count === 1 ? ' purchase' : ' purchases')"></small></span>
             <span class="dash-amount" x-text="money(entry.amount, summary.currency)"></span>
           </li>
         </template>

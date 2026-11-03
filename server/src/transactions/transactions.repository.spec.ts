@@ -90,12 +90,8 @@ describe('TransactionsRepository', () => {
     it.each([
       ['a category', { categoryId: UUID(9) }, { categoryId: UUID(9) }],
       ['no category', { categoryId: null }, { categoryId: null }],
-      [
-        'a parser',
-        { source: { parserName: 'bcp' } },
-        { email: { is: { parserName: 'bcp' } } },
-      ],
-      ['manual entry', { source: null }, { email: { is: null } }],
+      ['a bank', { bankName: 'bcp' }, { bankName: 'bcp' }],
+      ['no bank', { bankName: null }, { bankName: null }],
     ])('filters by %s', async (_name, filters, expected) => {
       const { prisma, repository } = repositoryWith();
 
@@ -117,16 +113,19 @@ describe('TransactionsRepository', () => {
     );
   });
 
-  it('findCategoryId only matches the user’s own transaction', async () => {
+  it('findForUpdate only matches the user’s own transaction', async () => {
     const { prisma, repository } = repositoryWith();
-    prisma.transaction.findFirst.mockResolvedValue({ categoryId: UUID(9) });
+    prisma.transaction.findFirst.mockResolvedValue({
+      categoryId: UUID(9),
+      email: null,
+    });
 
-    const result = await repository.findCategoryId(UUID(1), 'user-1');
+    const result = await repository.findForUpdate(UUID(1), 'user-1');
 
-    expect(result).toEqual({ categoryId: UUID(9) });
+    expect(result).toEqual({ categoryId: UUID(9), email: null });
     expect(prisma.transaction.findFirst).toHaveBeenCalledWith({
       where: { id: UUID(1), userId: 'user-1' },
-      select: { categoryId: true },
+      select: { categoryId: true, email: { select: { id: true } } },
     });
   });
 

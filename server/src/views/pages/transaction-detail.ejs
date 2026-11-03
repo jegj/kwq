@@ -27,10 +27,8 @@
     <dt>Card</dt><dd><%= transaction.cardLastFour ? '•••• ' + transaction.cardLastFour : '—' %></dd>
     <dt>Operation number</dt><dd><%= transaction.operationNumber ?? '—' %></dd>
     <dt>Operation description</dt><dd><%= transaction.operationDescription ?? '—' %></dd>
+    <dt>Bank</dt><dd><% if (transaction.bankName) { %><span class="parser-chip" style="--parser-hue: <%= [...transaction.bankName].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7) %>"><%= transaction.bankName %></span><% } else { %>Cash / other<% } %></dd>
     <% if (transaction.email) { %>
-    <% if (transaction.email.parserName) { %>
-    <dt>Parser</dt><dd><span class="parser-chip" style="--parser-hue: <%= [...transaction.email.parserName].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7) %>"><%= transaction.email.parserName %></span></dd>
-    <% } %>
     <dt>Source email</dt><dd><a href="/app/emails/<%= transaction.email.id %>">View email</a></dd>
     <% } %>
   </dl>

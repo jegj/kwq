@@ -1,4 +1,4 @@
-<%# Expects a wrapping x-data="transactionForm(redirectAfterDelete, nowInput)" and `categories` local. %>
+<%# Expects a wrapping x-data="transactionForm(redirectAfterDelete, nowInput)" and `categories` + `banks` locals. %>
 <dialog x-bind:open="dialog === 'add' || dialog === 'edit'">
   <article>
     <header>
@@ -44,6 +44,15 @@
           </select>
         </label>
       </div>
+      <label x-show="dialog === 'add' || !selected?.email">
+        Bank
+        <select x-model="form.bankName">
+          <option value="">Cash / other</option>
+          <% banks.forEach((name) => { %>
+          <option value="<%= name %>"><%= name %></option>
+          <% }) %>
+        </select>
+      </label>
       <details x-bind:open="form.description || form.cardLastFour || form.operationNumber || form.operationDescription">
         <summary>More details</summary>
         <label>

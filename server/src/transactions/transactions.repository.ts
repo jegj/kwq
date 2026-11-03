@@ -20,7 +20,8 @@ const transactionSelect = {
   transactionDate: true,
   categoryId: true,
   category: { select: { name: true, icon: true, color: true } },
-  email: { select: { id: true, parserName: true } },
+  bankName: true,
+  email: { select: { id: true } },
 } satisfies Prisma.TransactionSelect;
 
 export type TransactionRecord = Prisma.TransactionGetPayload<{
@@ -32,8 +33,8 @@ export interface TransactionFilters {
   month?: { gte: Date; lt: Date };
   // null = uncategorized
   categoryId?: string | null;
-  // null = manual entry (no source email)
-  source?: { parserName: string } | null;
+  // null = no bank
+  bankName?: string | null;
 }
 
 @Injectable()
@@ -53,8 +54,8 @@ export class TransactionsRepository {
     if (filters.categoryId !== undefined) {
       where.categoryId = filters.categoryId;
     }
-    if (filters.source !== undefined) {
-      where.email = { is: filters.source };
+    if (filters.bankName !== undefined) {
+      where.bankName = filters.bankName;
     }
     const keyset = keysetWhere('transactionDate', cursors);
     if (keyset) {
@@ -75,13 +76,16 @@ export class TransactionsRepository {
     });
   }
 
-  findCategoryId(
+  findForUpdate(
     id: string,
     userId: string,
-  ): Promise<{ categoryId: string | null } | null> {
+  ): Promise<{
+    categoryId: string | null;
+    email: { id: string } | null;
+  } | null> {
     return this.prisma.transaction.findFirst({
       where: { id, userId },
-      select: { categoryId: true },
+      select: { categoryId: true, email: { select: { id: true } } },
     });
   }
 

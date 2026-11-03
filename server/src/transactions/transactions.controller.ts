@@ -48,10 +48,8 @@ export class TransactionsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const { transaction, categories } = await this.transactionsService.get(
-      user.id,
-      id,
-    );
+    const { transaction, categories, banks } =
+      await this.transactionsService.get(user.id, id);
     return {
       title: transaction.merchant,
       page: './pages/transaction-detail',
@@ -60,6 +58,7 @@ export class TransactionsController {
       currentPath: CURRENT_PATH,
       transaction,
       categories,
+      banks,
     };
   }
 

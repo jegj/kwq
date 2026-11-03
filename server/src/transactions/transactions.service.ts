@@ -22,9 +22,8 @@ import {
 
 const PAGE_SIZE = 20;
 
-// Sentinel filter values: no category / no source email.
+// Sentinel filter value: no category / no bank.
 const NONE = 'none';
-const MANUAL = 'manual';
 
 // Decimals are rendered as strings.
 const toView = (row: TransactionRecord) => ({
@@ -48,15 +47,13 @@ export class TransactionsService {
     const before = after ? undefined : parseCursor(query.before);
 
     const categories = await this.categoriesRepository.findVisible(userId);
-    const parsers = this.parserRegistry.names;
+    const banks = this.parserRegistry.names;
     const category =
       query.category === NONE
         ? NONE
         : categories.find((item) => item.id === query.category)?.id;
-    const parser =
-      query.parser === MANUAL
-        ? MANUAL
-        : parsers.find((name) => name === query.parser);
+    const bank =
+      query.bank === NONE ? NONE : banks.find((name) => name === query.bank);
 
     // Fetch one extra row to know whether another page exists.
     const rows = await this.repository.findPage(
@@ -69,12 +66,7 @@ export class TransactionsService {
             : category === NONE
               ? null
               : category,
-        source:
-          parser === undefined
-            ? undefined
-            : parser === MANUAL
-              ? null
-              : { parserName: parser },
+        bankName: bank === undefined ? undefined : bank === NONE ? null : bank,
       },
       { before, after },
       PAGE_SIZE + 1,
@@ -89,10 +81,10 @@ export class TransactionsService {
     return {
       transactions: page.rows.map(toView),
       categories,
-      parsers,
+      banks,
       month: month ? query.month : null,
       category: category ?? null,
-      parser: parser ?? null,
+      bank: bank ?? null,
       olderCursor: page.olderCursor,
       newerCursor: page.newerCursor,
     };
@@ -106,6 +98,7 @@ export class TransactionsService {
     return {
       transaction: toView(row),
       categories: await this.categoriesRepository.findVisible(userId),
+      banks: this.parserRegistry.names,
     };
   }
 
@@ -114,13 +107,14 @@ export class TransactionsService {
     await this.assertCategoryAccessible(categoryId, userId);
     return this.repository.create({
       ...this.toData(body),
+      bankName: this.resolveBank(body.bankName),
       userId,
       isManuallyCategorized: categoryId !== null,
     });
   }
 
   async update(userId: string, id: string, body: TransactionDto) {
-    const existing = await this.repository.findCategoryId(id, userId);
+    const existing = await this.repository.findForUpdate(id, userId);
     if (!existing) {
       throw new NotFoundException('Transaction not found.');
     }
@@ -129,8 +123,14 @@ export class TransactionsService {
     if (categoryChanged) {
       await this.assertCategoryAccessible(categoryId, userId);
     }
+    // A parsed transaction's bank comes from its email's parser; only manual
+    // ones can change it.
+    const bank = existing.email
+      ? {}
+      : { bankName: this.resolveBank(body.bankName) };
     await this.repository.update(id, userId, {
       ...this.toData(body),
+      ...bank,
       isManuallyCategorized: categoryChanged ? true : undefined,
     });
   }
@@ -161,6 +161,16 @@ export class TransactionsService {
       operationType: body.operationType ?? null,
       categoryId: body.categoryId ?? null,
     };
+  }
+
+  private resolveBank(bankName: string | null | undefined): string | null {
+    if (!bankName) {
+      return null;
+    }
+    if (!this.parserRegistry.names.includes(bankName)) {
+      throw new BadRequestException('Unknown bank.');
+    }
+    return bankName;
   }
 
   private async assertCategoryAccessible(

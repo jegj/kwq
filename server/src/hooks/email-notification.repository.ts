@@ -74,6 +74,7 @@ export class EmailNotificationRepository {
       const transaction = await tx.transaction.create({
         data: {
           userId,
+          bankName: parserName,
           amount: parsed.amount,
           currency: parsed.currency,
           merchant: parsed.merchant,

@@ -93,6 +93,7 @@ model Transaction {
   operationNumber       String?   @map("operation_number")
   operationDescription  String?   @map("operation_description")
   operationType         OperationType? @map("operation_type")
+  bankName              String?   @map("bank_name")
   transactionDate       DateTime  @db.Timestamptz(3) @map("transaction_date")
   isManuallyCategorized Boolean   @default(false) @map("is_manually_categorized")
   email                 EmailNotification?
@@ -101,6 +102,7 @@ model Transaction {
 
   @@index([userId, transactionDate(sort: Desc), id(sort: Desc)])
   @@index([userId, categoryId, transactionDate(sort: Desc), id(sort: Desc)])
+  @@index([userId, bankName, transactionDate(sort: Desc), id(sort: Desc)])
   @@map("transaction")
 }
 

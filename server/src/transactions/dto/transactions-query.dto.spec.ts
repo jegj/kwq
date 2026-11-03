@@ -21,7 +21,7 @@ describe('TransactionsQueryDto', () => {
         after: '1_x',
         month: '2026-09',
         category: 'none',
-        parser: 'manual',
+        bank: 'none',
       }),
     ).toEqual([]);
   });

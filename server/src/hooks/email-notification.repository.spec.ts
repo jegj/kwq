@@ -85,7 +85,11 @@ describe('EmailNotificationRepository', () => {
     );
     expect(prisma._tx.transaction.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ userId: 'user-1', amount: '10.00' }),
+        data: expect.objectContaining({
+          userId: 'user-1',
+          amount: '10.00',
+          bankName: 'test-parser',
+        }),
       }),
     );
     expect(prisma._tx.emailNotification.update).toHaveBeenCalledWith({

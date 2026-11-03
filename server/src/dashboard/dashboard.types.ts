@@ -26,8 +26,8 @@ export interface MerchantTotal {
   count: number;
 }
 
-export interface ParserTotal {
-  parser: string;
+export interface BankTotal {
+  bank: string;
   amount: number;
   count: number;
 }
@@ -44,6 +44,6 @@ export interface CurrencySummary {
   recent: TransactionItem[];
   biggest: TransactionItem[];
   topMerchants: MerchantTotal[];
-  byParser: ParserTotal[];
+  byBank: BankTotal[];
   uncategorized: number;
 }
