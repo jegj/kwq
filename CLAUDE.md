@@ -213,6 +213,15 @@ kwq (Qhawaq) is a Peruvian bank spending analyzer: it watches your gmail(for now
   otherwise `tsc` skips emitting) itself.
 - `npm run lint` also covers `assets/js` and `scripts/`.
 
+## Formatting & linting
+
+- **Biome** (`@biomejs/biome`) is the only formatter/linter — never run
+  Prettier or ESLint, even `--check`: the repo isn't formatted with them and
+  `--write` rewrites unrelated lines.
+- Before finishing a change, run `npm run check -- <changed files>` from the
+  repo root (`biome check --write`: format + lint + import sorting). Scope it
+  to the files you touched, not the whole tree.
+
 ## Deployment (Caddy reverse proxy)
 
 - Nest stays the origin for everything, `/assets/*` included. Caddy only
