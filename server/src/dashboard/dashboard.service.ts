@@ -163,7 +163,6 @@ export class DashboardService {
       recentRows,
       biggestRows,
       uncategorizedRows,
-      merchantRows,
       bankRows,
       dailyRows,
     ] = await Promise.all([
@@ -173,7 +172,6 @@ export class DashboardService {
       this.repository.recentTransactions(userId, range, LIST_SIZE),
       this.repository.biggestTransactions(userId, range, LIST_SIZE),
       this.repository.uncategorizedCounts(userId, range),
-      this.repository.topMerchants(userId, range, LIST_SIZE),
       this.repository.totalsByBank(userId, range),
       this.repository.dailyTotals(userId, range, this.timeZone),
     ]);
@@ -206,9 +204,6 @@ export class DashboardService {
           daily: dailyTotals(dailyRows, currency, daysInMonth(month)),
           recent: inCurrency(recentRows, currency).map(item),
           biggest: inCurrency(biggestRows, currency).map(item),
-          topMerchants: inCurrency(merchantRows, currency).map(
-            ({ merchant, amount, count }) => ({ merchant, amount, count }),
-          ),
           byBank: inCurrency(bankRows, currency).map(
             ({ bank, amount, count }) => ({
               bank: bank ?? NO_BANK,

@@ -112,17 +112,6 @@
         </template>
       </ul>
     </article>
-    <article>
-      <h2>Top merchants</h2>
-      <ul class="dash-list">
-        <template x-for="entry in (summary ? summary.topMerchants : [])" :key="entry.merchant">
-          <li>
-            <span class="dash-merchant"><span x-text="entry.merchant"></span> <small style="color: var(--pico-muted-color);" x-text="'· ' + entry.count + (entry.count === 1 ? ' purchase' : ' purchases')"></small></span>
-            <span class="dash-amount" x-text="money(entry.amount, summary.currency)"></span>
-          </li>
-        </template>
-      </ul>
-    </article>
   </section>
 </div>
 

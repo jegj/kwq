@@ -10,7 +10,7 @@ import {
   paginate,
   parseCursor,
 } from '../common/pagination.util.js';
-import { parseInputValue } from '../common/timezone.util.js';
+import { currentMonthIn, parseInputValue } from '../common/timezone.util.js';
 import type { EnvironmentVariables } from '../config/env.validation.js';
 import { ParserRegistry } from '../hooks/parser/parser.registry.js';
 import type { TransactionDto } from './dto/transaction.dto.js';
@@ -41,7 +41,10 @@ export class TransactionsService {
   ) {}
 
   async list(userId: string, query: TransactionsQueryDto) {
-    const month = monthRange(this.config.get('APP_TIMEZONE'), query.month);
+    const timeZone = this.config.get('APP_TIMEZONE');
+    // Absent month = current month; an explicit empty one (`?month=`) = all.
+    const selectedMonth = query.month ?? currentMonthIn(timeZone, new Date());
+    const month = monthRange(timeZone, selectedMonth);
     const after = parseCursor(query.after);
     // ponytail: ?after wins over ?before if both are sent.
     const before = after ? undefined : parseCursor(query.before);
@@ -82,7 +85,7 @@ export class TransactionsService {
       transactions: page.rows.map(toView),
       categories,
       banks,
-      month: month ? query.month : null,
+      month: month ? selectedMonth : null,
       category: category ?? null,
       bank: bank ?? null,
       olderCursor: page.olderCursor,

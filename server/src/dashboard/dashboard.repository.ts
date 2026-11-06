@@ -20,13 +20,6 @@ export interface UncategorizedCount {
   count: number;
 }
 
-export interface MerchantTotalRow {
-  currency: string;
-  merchant: string;
-  amount: number;
-  count: number;
-}
-
 export interface BankTotalRow {
   currency: string;
   bank: string | null;
@@ -115,33 +108,6 @@ export class DashboardRepository {
         AND transaction_date < ${range.lt}
         AND category_id IS NULL
       GROUP BY currency`;
-  }
-
-  topMerchants(
-    userId: string,
-    range: { gte: Date; lt: Date },
-    limit: number,
-  ): Promise<MerchantTotalRow[]> {
-    return this.prisma.$queryRaw<MerchantTotalRow[]>`
-      SELECT currency, merchant, amount, count
-      FROM (
-        SELECT
-          currency,
-          merchant,
-          round(sum(amount), 2)::float8 AS amount,
-          count(*)::int AS count,
-          row_number() OVER (
-            PARTITION BY currency
-            ORDER BY sum(amount) DESC, merchant
-          ) AS rank
-        FROM transaction
-        WHERE user_id = ${userId}::uuid
-          AND transaction_date >= ${range.gte}
-          AND transaction_date < ${range.lt}
-        GROUP BY currency, merchant
-      ) ranked
-      WHERE rank <= ${limit}
-      ORDER BY currency, rank`;
   }
 
   // NULL bank = manual entry without a bank (cash/other).

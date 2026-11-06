@@ -57,7 +57,6 @@ interface Stubs {
   totalsByMonth?: Record<string, any[]>;
   categories?: any[];
   uncategorized?: any[];
-  merchants?: any[];
   banks?: any[];
   daily?: any[];
   recent?: any[];
@@ -75,7 +74,6 @@ function serviceWith({
   totalsByMonth = twoCurrencies,
   categories = [],
   uncategorized = [],
-  merchants = [],
   banks = [],
   daily = [],
   recent = [],
@@ -88,7 +86,6 @@ function serviceWith({
     ),
     totalsByCategory: vi.fn(async () => categories),
     uncategorizedCounts: vi.fn(async () => uncategorized),
-    topMerchants: vi.fn(async () => merchants),
     totalsByBank: vi.fn(async () => banks),
     dailyTotals: vi.fn(async () => daily),
     recentTransactions: vi.fn(async () => recent),
@@ -283,22 +280,6 @@ describe('DashboardService.getSummaries lists', () => {
 
     expect(pen.recent[0].categoryName).toBeNull();
     expect(pen.recent[0].color).toBe('#8b95a7');
-  });
-
-  it('attaches the top merchants of each currency', async () => {
-    const [pen, usd] = await serviceWith({
-      merchants: [
-        { currency: 'PEN', merchant: 'Wong', amount: 50, count: 1 },
-        { currency: 'USD', merchant: 'Uber', amount: 25, count: 2 },
-      ],
-    }).getSummaries(userId, '2026-10');
-
-    expect(pen.topMerchants).toEqual([
-      { merchant: 'Wong', amount: 50, count: 1 },
-    ]);
-    expect(usd.topMerchants).toEqual([
-      { merchant: 'Uber', amount: 25, count: 2 },
-    ]);
   });
 
   it('attaches the spend per bank of each currency', async () => {

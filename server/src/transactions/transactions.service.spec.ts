@@ -65,7 +65,7 @@ describe('TransactionsService', () => {
     it('asks for one extra row so it knows if another page exists', async () => {
       const { repository, service } = serviceWith([transactionRow(1)]);
 
-      const result = await service.list('user-1', {});
+      const result = await service.list('user-1', { month: '' });
 
       expect(repository.findPage).toHaveBeenCalledWith(
         'user-1',
@@ -137,6 +137,29 @@ describe('TransactionsService', () => {
         lt: new Date('2026-10-01T05:00:00.000Z'),
       });
       expect(result.month).toBe('2026-09');
+    });
+
+    it('defaults to the current month when none is given', async () => {
+      vi.useFakeTimers({ now: new Date('2026-11-04T12:00:00Z') });
+      const { repository, service } = serviceWith();
+
+      const result = await service.list('user-1', {});
+      vi.useRealTimers();
+
+      expect(result.month).toBe('2026-11');
+      expect(filtersOf(repository).month).toEqual({
+        gte: new Date('2026-11-01T05:00:00.000Z'),
+        lt: new Date('2026-12-01T05:00:00.000Z'),
+      });
+    });
+
+    it('shows every month when month is explicitly empty', async () => {
+      const { repository, service } = serviceWith();
+
+      const result = await service.list('user-1', { month: '' });
+
+      expect(filtersOf(repository).month).toBeUndefined();
+      expect(result.month).toBeNull();
     });
 
     it('ignores a malformed cursor and an invalid month', async () => {

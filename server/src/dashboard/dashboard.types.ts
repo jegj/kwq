@@ -20,12 +20,6 @@ export interface TransactionItem {
   date: string;
 }
 
-export interface MerchantTotal {
-  merchant: string;
-  amount: number;
-  count: number;
-}
-
 export interface BankTotal {
   bank: string;
   amount: number;
@@ -43,7 +37,6 @@ export interface CurrencySummary {
   daily: number[];
   recent: TransactionItem[];
   biggest: TransactionItem[];
-  topMerchants: MerchantTotal[];
   byBank: BankTotal[];
   uncategorized: number;
 }
