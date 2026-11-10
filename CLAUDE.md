@@ -276,6 +276,12 @@ per the stack decision above); JSON endpoints exist only for mutations
   - `GET /app/transactions` — list. Same keyset pagination/`month` filter as
     `/app/emails`, on `(transactionDate DESC, id DESC)`; shared helpers in
     `server/src/common/pagination.util.ts`. Rows link to their source email.
+  - `GET /app/transactions/export?month=YYYY-MM&bank=<name>` — CSV download in
+    the BCP statement layout (`Fecha,Descripcion,Moneda,Monto`; debits
+    negative, `S/`/`$`) for comparing with the bank's own file. Both params
+    required (400 otherwise); includes that bank's rows plus bank-less (manual)
+    ones. Must stay declared before `:id`. Formatter:
+    `server/src/transactions/transactions-csv.util.ts`.
   - `GET /app/transactions/:id` — detail (links to source email if any) +
     edit/delete dialogs
   - `POST /app/transactions` / `PATCH /app/transactions/:id` /
