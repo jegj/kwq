@@ -35,6 +35,7 @@ const registry = { names: ['bcp', 'interbank'] };
 function serviceWith(rows: unknown[] = [], categories: { id: string }[] = []) {
   const repository = {
     findPage: vi.fn().mockResolvedValue(rows),
+    findForExport: vi.fn().mockResolvedValue(rows),
     findById: vi.fn().mockResolvedValue(null),
     findForUpdate: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockResolvedValue({ id: UUID(1) }),
@@ -61,6 +62,64 @@ const filtersOf = (repository: { findPage: ReturnType<typeof vi.fn> }) =>
   repository.findPage.mock.calls[0][1];
 
 describe('TransactionsService', () => {
+  describe('exportCsv', () => {
+    it('queries the month in the app zone for the bank and builds the CSV', async () => {
+      const { repository, service } = serviceWith([transactionRow(1)]);
+
+      const result = await service.exportCsv('user-1', {
+        month: '2026-10',
+        bank: 'bcp',
+      });
+
+      expect(repository.findForExport).toHaveBeenCalledWith(
+        'user-1',
+        {
+          gte: new Date('2026-10-01T05:00:00.000Z'),
+          lt: new Date('2026-11-01T05:00:00.000Z'),
+        },
+        'bcp',
+      );
+      expect(result.filename).toBe('kwq-bcp-2026-10.csv');
+      expect(result.csv).toContain('Fecha,Descripcion,Moneda,Monto');
+      expect(result.csv).toContain(',Shop 1,S/,-10.5');
+    });
+
+    it('returns a header-only file for an empty month', async () => {
+      const { service } = serviceWith([]);
+
+      const result = await service.exportCsv('user-1', {
+        month: '2026-10',
+        bank: 'bcp',
+      });
+
+      expect(result.csv).toBe('\uFEFFFecha,Descripcion,Moneda,Monto\r\n');
+    });
+
+    it.each([undefined, '', '2026-13', 'oct'])(
+      'rejects an invalid month (%s)',
+      async (month) => {
+        const { repository, service } = serviceWith();
+
+        await expect(
+          service.exportCsv('user-1', { month, bank: 'bcp' }),
+        ).rejects.toThrow(BadRequestException);
+        expect(repository.findForExport).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([undefined, '', 'none', 'nope'])(
+      'rejects a missing or unknown bank (%s)',
+      async (bank) => {
+        const { repository, service } = serviceWith();
+
+        await expect(
+          service.exportCsv('user-1', { month: '2026-10', bank }),
+        ).rejects.toThrow(BadRequestException);
+        expect(repository.findForExport).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe('list', () => {
     it('asks for one extra row so it knows if another page exists', async () => {
       const { repository, service } = serviceWith([transactionRow(1)]);

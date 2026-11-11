@@ -6,6 +6,9 @@ const body = { merchant: 'Shop' } as any;
 
 function controllerWith() {
   const service = {
+    exportCsv: vi
+      .fn()
+      .mockResolvedValue({ filename: 'kwq-bcp-2026-10.csv', csv: 'a,b' }),
     list: vi.fn().mockResolvedValue({ transactions: [], categories: [] }),
     get: vi
       .fn()
@@ -32,6 +35,31 @@ describe('TransactionsController', () => {
       currentPath: '/app/transactions',
       transactions: [],
     });
+  });
+
+  it('sends the export as a CSV download', async () => {
+    const { service, controller } = controllerWith();
+    const reply = { header: vi.fn().mockReturnThis() };
+
+    const result = await controller.exportTransactions(
+      user,
+      { month: '2026-10', bank: 'bcp' },
+      reply as any,
+    );
+
+    expect(service.exportCsv).toHaveBeenCalledWith('user-1', {
+      month: '2026-10',
+      bank: 'bcp',
+    });
+    expect(reply.header).toHaveBeenCalledWith(
+      'Content-Type',
+      'text/csv; charset=utf-8',
+    );
+    expect(reply.header).toHaveBeenCalledWith(
+      'Content-Disposition',
+      'attachment; filename="kwq-bcp-2026-10.csv"',
+    );
+    expect(result).toBe('a,b');
   });
 
   it('renders the detail page titled by the merchant', async () => {

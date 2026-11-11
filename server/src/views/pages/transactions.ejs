@@ -34,6 +34,22 @@
     <% } %>
   </form>
 
+  <form method="get" action="/app/transactions/export" class="emails-filter">
+    <label>
+      Export month
+      <input type="month" name="month" required value="<%= month || fmt.formatInputValue(new Date()).slice(0, 7) %>" />
+    </label>
+    <label>
+      Bank
+      <select name="bank">
+        <% banks.forEach((name) => { %>
+        <option value="<%= name %>"><%= name %></option>
+        <% }) %>
+      </select>
+    </label>
+    <button type="submit" class="outline">Export CSV</button>
+  </form>
+
   <% if (transactions.length === 0) { %>
   <p class="categories-empty">No transactions<%= (month || category || bank) ? ' match these filters' : ' yet' %>. Add one, or wait for the next bank email.</p>
   <% } else { %>

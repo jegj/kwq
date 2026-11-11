@@ -19,6 +19,7 @@ import {
   type TransactionRecord,
   TransactionsRepository,
 } from './transactions.repository.js';
+import { toBankCsv } from './transactions-csv.util.js';
 
 const PAGE_SIZE = 20;
 
@@ -90,6 +91,26 @@ export class TransactionsService {
       bank: bank ?? null,
       olderCursor: page.olderCursor,
       newerCursor: page.newerCursor,
+    };
+  }
+
+  async exportCsv(userId: string, query: { month?: string; bank?: string }) {
+    const timeZone = this.config.get('APP_TIMEZONE');
+    const month = monthRange(timeZone, query.month);
+    if (!month || !query.month) {
+      throw new BadRequestException('A valid month (YYYY-MM) is required.');
+    }
+    const bank = this.parserRegistry.names.find((name) => name === query.bank);
+    if (!bank) {
+      throw new BadRequestException('A known bank is required.');
+    }
+    const rows = await this.repository.findForExport(userId, month, bank);
+    return {
+      filename: `kwq-${bank}-${query.month}.csv`,
+      csv: toBankCsv(
+        rows.map((row) => ({ ...row, amount: String(row.amount) })),
+        timeZone,
+      ),
     };
   }
 

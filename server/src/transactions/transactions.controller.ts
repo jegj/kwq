@@ -10,8 +10,10 @@ import {
   Post,
   Query,
   Render,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 import { SessionGuard } from '../auth/guard/session.guard.js';
 import type { AuthenticatedUser } from '../auth/types/auth.types.js';
 import { CurrentUser } from '../common/current-user.decorator.js';
@@ -40,6 +42,23 @@ export class TransactionsController {
       currentPath: CURRENT_PATH,
       ...(await this.transactionsService.list(user.id, query)),
     };
+  }
+
+  // Declared before `:id`, which would otherwise swallow "export".
+  @Get('export')
+  async exportTransactions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: TransactionsQueryDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const { filename, csv } = await this.transactionsService.exportCsv(
+      user.id,
+      query,
+    );
+    reply
+      .header('Content-Type', 'text/csv; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="${filename}"`);
+    return csv;
   }
 
   @Get(':id')

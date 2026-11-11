@@ -18,6 +18,34 @@ function repositoryWith() {
 }
 
 describe('TransactionsRepository', () => {
+  describe('findForExport', () => {
+    it('returns the bank and bank-less rows of the month, newest first, unpaged', async () => {
+      const { prisma, repository } = repositoryWith();
+      const month = {
+        gte: new Date('2026-10-01T05:00:00Z'),
+        lt: new Date('2026-11-01T05:00:00Z'),
+      };
+
+      await repository.findForExport('user-1', month, 'bcp');
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-1',
+          transactionDate: month,
+          OR: [{ bankName: 'bcp' }, { bankName: null }],
+        },
+        orderBy: [{ transactionDate: 'desc' }, { id: 'desc' }],
+        select: {
+          merchant: true,
+          amount: true,
+          currency: true,
+          operationType: true,
+          transactionDate: true,
+        },
+      });
+    });
+  });
+
   describe('findPage', () => {
     it('scopes to the user, newest first, with the requested take', async () => {
       const { prisma, repository } = repositoryWith();

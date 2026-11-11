@@ -28,6 +28,16 @@ export type TransactionRecord = Prisma.TransactionGetPayload<{
   select: typeof transactionSelect;
 }>;
 
+export type CsvRow = Prisma.TransactionGetPayload<{
+  select: {
+    merchant: true;
+    amount: true;
+    currency: true;
+    operationType: true;
+    transactionDate: true;
+  };
+}>;
+
 // Omitted key = no filter on that field.
 export interface TransactionFilters {
   month?: { gte: Date; lt: Date };
@@ -66,6 +76,30 @@ export class TransactionsRepository {
       orderBy: keysetOrderBy('transactionDate', cursors),
       take,
       select: transactionSelect,
+    });
+  }
+
+  // Whole month for the bank CSV. Bank-less rows (manual) ride along so a
+  // fix you entered by hand still lines up with the bank's statement.
+  findForExport(
+    userId: string,
+    month: { gte: Date; lt: Date },
+    bankName: string,
+  ): Promise<CsvRow[]> {
+    return this.prisma.transaction.findMany({
+      where: {
+        userId,
+        transactionDate: month,
+        OR: [{ bankName }, { bankName: null }],
+      },
+      orderBy: [{ transactionDate: 'desc' }, { id: 'desc' }],
+      select: {
+        merchant: true,
+        amount: true,
+        currency: true,
+        operationType: true,
+        transactionDate: true,
+      },
     });
   }
 
