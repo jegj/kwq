@@ -6,10 +6,11 @@ export interface CsvTransaction {
   currency: string;
   operationType: 'CREDIT' | 'DEBIT' | 'UNKNOWN' | null;
   transactionDate: Date;
+  category: { name: string } | null;
 }
 
 const BOM = '﻿';
-const HEADER = ['Fecha', 'Descripcion', 'Moneda', 'Monto'];
+const HEADER = ['Fecha', 'Descripcion', 'Moneda', 'Monto', 'Categoria', 'Mes'];
 const CURRENCY_SYMBOLS: Record<string, string> = { PEN: 'S/', USD: '$' };
 const FORMULA_START = /^[=+\-@]/;
 const NEEDS_QUOTES = /[",\r\n]/;
@@ -29,16 +30,20 @@ function signedAmount(row: CsvTransaction): string {
   return String(row.operationType === 'CREDIT' ? value : -value);
 }
 
-// CSV in the BCP statement layout (Fecha, Descripcion, Moneda, Monto), so a
-// month can be compared line by line with the bank's own file.
+// CSV in the BCP statement layout (Fecha, Descripcion, Moneda, Monto) plus
+// Categoria (uppercase) and Mes (1-12), so a month can be compared line by
+// line with the bank's own file.
 export function toBankCsv(rows: CsvTransaction[], timeZone: string): string {
-  const body = rows.map((row) =>
-    [
-      toInputValue(timeZone, row.transactionDate).slice(0, 10),
+  const body = rows.map((row) => {
+    const localDate = toInputValue(timeZone, row.transactionDate).slice(0, 10);
+    return [
+      localDate,
       escapeField(defuseFormula(row.merchant)),
       CURRENCY_SYMBOLS[row.currency] ?? row.currency,
       signedAmount(row),
-    ].join(','),
-  );
+      escapeField(defuseFormula(row.category?.name.toUpperCase() ?? '')),
+      Number(localDate.slice(5, 7)),
+    ].join(',');
+  });
   return `${BOM}${[HEADER.join(','), ...body].join('\r\n')}\r\n`;
 }

@@ -10,6 +10,7 @@ const row = (overrides = {}) => ({
   currency: 'PEN',
   operationType: 'DEBIT' as const,
   transactionDate: new Date('2026-11-05T15:00:00Z'),
+  category: { name: 'Food' } as { name: string } | null,
   ...overrides,
 });
 
@@ -19,13 +20,15 @@ describe('toBankCsv', () => {
   it('starts with a BOM and the bank header, CRLF-terminated', () => {
     const csv = toBankCsv([], TIME_ZONE);
 
-    expect(csv).toBe(`${BOM}Fecha,Descripcion,Moneda,Monto\r\n`);
+    expect(csv).toBe(`${BOM}Fecha,Descripcion,Moneda,Monto,Categoria,Mes\r\n`);
   });
 
   it('writes one bank-style row per transaction', () => {
     const csv = toBankCsv([row()], TIME_ZONE);
 
-    expect(lines(csv)[1]).toBe('2026-11-05,KFC 070 UNIVERSITARIA,S/,-59.9');
+    expect(lines(csv)[1]).toBe(
+      '2026-11-05,KFC 070 UNIVERSITARIA,S/,-59.9,FOOD,11',
+    );
   });
 
   it('makes debits negative and credits positive', () => {
@@ -81,6 +84,36 @@ describe('toBankCsv', () => {
 
     expect(lines(csv)[1]).toContain(`,"'=HYPERLINK(""x"")",`);
     expect(lines(csv)[2]).toContain(",'-cmd,");
+  });
+
+  it('uppercases the category and leaves it empty when uncategorized', () => {
+    const csv = toBankCsv(
+      [row({ category: { name: 'Salud y Más' } }), row({ category: null })],
+      TIME_ZONE,
+    );
+
+    expect(lines(csv)[1]).toContain(',SALUD Y MÁS,11');
+    expect(lines(csv)[2].endsWith('-59.9,,11')).toBe(true);
+  });
+
+  it('writes the month as an integer in the app zone', () => {
+    // 2026-12-01T02:00Z is still Nov 30 in Lima.
+    const csv = toBankCsv(
+      [
+        row({ transactionDate: new Date('2026-12-01T02:00:00Z') }),
+        row({ transactionDate: new Date('2026-03-10T15:00:00Z') }),
+      ],
+      TIME_ZONE,
+    );
+
+    expect(lines(csv)[1].endsWith(',11')).toBe(true);
+    expect(lines(csv)[2].endsWith(',3')).toBe(true);
+  });
+
+  it('quotes and defuses the category like any text cell', () => {
+    const csv = toBankCsv([row({ category: { name: '=a,b' } })], TIME_ZONE);
+
+    expect(lines(csv)[1]).toContain(`,"'=A,B",11`);
   });
 
   it('keeps the given row order', () => {

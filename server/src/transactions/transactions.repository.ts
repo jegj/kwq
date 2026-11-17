@@ -35,6 +35,7 @@ export type CsvRow = Prisma.TransactionGetPayload<{
     currency: true;
     operationType: true;
     transactionDate: true;
+    category: { select: { name: true } };
   };
 }>;
 
@@ -99,6 +100,7 @@ export class TransactionsRepository {
         currency: true,
         operationType: true,
         transactionDate: true,
+        category: { select: { name: true } },
       },
     });
   }

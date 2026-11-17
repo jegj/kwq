@@ -80,8 +80,10 @@ describe('TransactionsService', () => {
         'bcp',
       );
       expect(result.filename).toBe('kwq-bcp-2026-10.csv');
-      expect(result.csv).toContain('Fecha,Descripcion,Moneda,Monto');
-      expect(result.csv).toContain(',Shop 1,S/,-10.5');
+      expect(result.csv).toContain(
+        'Fecha,Descripcion,Moneda,Monto,Categoria,Mes',
+      );
+      expect(result.csv).toContain(',Shop 1,S/,-10.5,,');
     });
 
     it('returns a header-only file for an empty month', async () => {
@@ -92,7 +94,9 @@ describe('TransactionsService', () => {
         bank: 'bcp',
       });
 
-      expect(result.csv).toBe('\uFEFFFecha,Descripcion,Moneda,Monto\r\n');
+      expect(result.csv).toBe(
+        '\uFEFFFecha,Descripcion,Moneda,Monto,Categoria,Mes\r\n',
+      );
     });
 
     it.each([undefined, '', '2026-13', 'oct'])(
