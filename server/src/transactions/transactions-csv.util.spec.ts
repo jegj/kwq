@@ -10,6 +10,7 @@ const row = (overrides = {}) => ({
   currency: 'PEN',
   operationType: 'DEBIT' as const,
   transactionDate: new Date('2026-11-05T15:00:00Z'),
+  description: null as string | null,
   category: { name: 'Food' } as { name: string } | null,
   ...overrides,
 });
@@ -31,13 +32,13 @@ describe('toBankCsv', () => {
     );
   });
 
-  it('makes debits negative and credits positive', () => {
+  it('makes every amount negative, credits included', () => {
     const csv = toBankCsv(
       [row({ operationType: 'CREDIT', amount: '125.00' })],
       TIME_ZONE,
     );
 
-    expect(lines(csv)[1]).toContain(',S/,125');
+    expect(lines(csv)[1]).toContain(',S/,-125,');
   });
 
   it('treats UNKNOWN and missing types as debits', () => {
@@ -84,6 +85,16 @@ describe('toBankCsv', () => {
 
     expect(lines(csv)[1]).toContain(`,"'=HYPERLINK(""x"")",`);
     expect(lines(csv)[2]).toContain(",'-cmd,");
+  });
+
+  it('appends the description to the merchant when present', () => {
+    const csv = toBankCsv(
+      [row({ description: 'Almuerzo' }), row({ description: null })],
+      TIME_ZONE,
+    );
+
+    expect(lines(csv)[1]).toContain(',KFC 070 UNIVERSITARIA - Almuerzo,S/,');
+    expect(lines(csv)[2]).toContain(',KFC 070 UNIVERSITARIA,S/,');
   });
 
   it('uppercases the category and leaves it empty when uncategorized', () => {

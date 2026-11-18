@@ -6,6 +6,7 @@ export interface CsvTransaction {
   currency: string;
   operationType: 'CREDIT' | 'DEBIT' | 'UNKNOWN' | null;
   transactionDate: Date;
+  description: string | null;
   category: { name: string } | null;
 }
 
@@ -24,10 +25,9 @@ function escapeField(text: string): string {
   return NEEDS_QUOTES.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-// Bank sheets carry debits as negatives; kwq stores a positive amount + type.
-function signedAmount(row: CsvTransaction): string {
-  const value = Number(row.amount);
-  return String(row.operationType === 'CREDIT' ? value : -value);
+// Every amount is negative so the sheet can sum them as spending.
+function negativeAmount(row: CsvTransaction): string {
+  return String(-Math.abs(Number(row.amount)));
 }
 
 // CSV in the BCP statement layout (Fecha, Descripcion, Moneda, Monto) plus
@@ -38,9 +38,15 @@ export function toBankCsv(rows: CsvTransaction[], timeZone: string): string {
     const localDate = toInputValue(timeZone, row.transactionDate).slice(0, 10);
     return [
       localDate,
-      escapeField(defuseFormula(row.merchant)),
+      escapeField(
+        defuseFormula(
+          row.description
+            ? `${row.merchant} - ${row.description}`
+            : row.merchant,
+        ),
+      ),
       CURRENCY_SYMBOLS[row.currency] ?? row.currency,
-      signedAmount(row),
+      negativeAmount(row),
       escapeField(defuseFormula(row.category?.name.toUpperCase() ?? '')),
       Number(localDate.slice(5, 7)),
     ].join(',');

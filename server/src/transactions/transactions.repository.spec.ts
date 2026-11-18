@@ -41,6 +41,7 @@ describe('TransactionsRepository', () => {
           currency: true,
           operationType: true,
           transactionDate: true,
+          description: true,
           category: { select: { name: true } },
         },
       });
